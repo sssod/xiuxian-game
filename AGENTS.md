@@ -58,14 +58,17 @@ Start with:
 2. `01_基础与总览/01_项目总览_MVP边界_系统依赖_v2.1.md`
 3. `01_基础与总览/03_术语表_命名规范_字段统一_v2.1.md`
 4. `03_实现交付/02_MVP开发切片与验收清单_v2.1.md`
-5. For current main UI implementation details, use `04_UIUX与效果图/主界面精修规格_2026-05-01/README.md` as the first source.
-6. `04_UIUX与效果图/01_UIUX需求方案_v2.1.md`
+5. `04_UIUX与效果图/01_UIUX需求方案_v2.1.md`
+6. `04_UIUX与效果图/02_UI效果图生成Prompt速查_v2.1.md`
+
+During high-frequency Figma UI iteration, do not maintain per-iteration "精修规格" document series unless explicitly requested. Use the current Figma artifact for node-level layout and component placement, and record only stable UI decisions in the v2.1 UI/UX documents.
 
 When documents conflict, prefer this order:
 
 ```text
 AGENTS.md
--> v2.1 main UI refinement specs, for current main UI implementation details
+-> current Figma UI artifact, for node-level main UI layout / component placement
+-> v2.1 UI/UX requirement document, for stable UI decisions
 -> v2.1 terminology / field-unification document
 -> v2.1 room turn / action economy / sect AI documents
 -> v2.1 runtime state / migration table

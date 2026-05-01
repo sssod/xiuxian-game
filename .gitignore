@@ -1,0 +1,25 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local notes and temporary exports
+*.tmp
+*.temp
+*.log
+tmp/
+temp/
+
+# Generated design exports
+exports/
+captures/
+
+# Local secrets should never be committed
+.env
+.env.*
+!.env.example

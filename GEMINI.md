@@ -7,11 +7,11 @@
 
 ## Scope
 
-This file applies to the `room-xiuxian-reincarnation-sandbox` sub-project only.
+This file applies to the `xiuxian-game` sub-project only.
 
 ## Bootstrap Rule
 
-During initialization, treat `orchestration/project-index/room-xiuxian-reincarnation-sandbox/bootstrap-spec.yaml` as the single source of truth for scaffold decisions.
+During initialization, treat `orchestration/project-index/xiuxian-game/bootstrap-spec.yaml` as the single source of truth for scaffold decisions.
 
 ## Resolution Hint
 

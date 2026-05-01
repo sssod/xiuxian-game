@@ -1,0 +1,3 @@
+interface:
+  display_name: "Execute Core"
+  short_description: "Core delivery workflow for execute tasks"

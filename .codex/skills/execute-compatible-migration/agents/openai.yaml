@@ -1,0 +1,3 @@
+interface:
+  display_name: "Execute Compatible Migration"
+  short_description: "Staged compatibility migration or cutover slice"

@@ -142,8 +142,8 @@ MainTurnWorkbenchRoot
 │  │  └─ RightPanelCollapsedTab
 │  │
 │  └─ RightBottomPlanningControls
-│     ├─ StartPlanningCommandPlateButton
-│     ├─ LockSubmitCommandPlateButton
+│     ├─ StartPlanningDiamondButton
+│     ├─ LockSubmitDiamondButton
 │     ├─ AutopilotRoundButton
 │     ├─ BackSmallRoundButton
 │     └─ AutopilotPopover
@@ -430,14 +430,14 @@ PersonalActionInstruction {
 ### 准备态
 
 ```text
-StartPlanningCommandPlateButton
+StartPlanningDiamondButton
 AutopilotRoundButton
 ```
 
 ### 规划态
 
 ```text
-LockSubmitCommandPlateButton
+LockSubmitDiamondButton
 AutopilotRoundButton
 BackSmallRoundButton
 ```
@@ -547,8 +547,8 @@ MainTurnWorkbenchRoot : Control
         RisksCluesPage : ScrollContainer
       RightPanelCollapsedTab : Button
     RightBottomPlanningControls : Control
-      StartPlanningCommandPlate : TextureButton
-      LockSubmitCommandPlate : TextureButton
+      StartPlanningDiamondButton : TextureButton
+      LockSubmitDiamondButton : TextureButton
       AutopilotButton : TextureButton
       BackButton : TextureButton
       AutopilotPopover : PanelContainer
@@ -590,7 +590,7 @@ MainTurnWorkbenchRoot : Control
 - [ ] 右侧节点面板使用面板内左侧纵向页签，不再使用顶部横向页签。
 - [ ] 行动卡无图片，但包含参数区、加入规划、高级设置入口。
 - [ ] 规划态底部预算条只展示，不表达可拖动编辑。
-- [ ] 右下 `开始规划` / `锁定提交` 使用底栏内命令牌按钮，文字内嵌且不超出 `BottomDockLayer`。
+- [ ] 右下 `开始规划` / `锁定提交` 保留独立菱形按钮，文本位于按钮内部居中，按钮不超出主 Frame。
 - [ ] 锁定等待态显示只读预算条和回退。
 - [ ] 托管摘要是右下按钮旁弹层，不是居中模态框。
 

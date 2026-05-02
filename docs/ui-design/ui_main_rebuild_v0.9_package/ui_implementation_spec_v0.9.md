@@ -29,7 +29,7 @@ S7 加入未决风险登记
 左上是目标追踪栏
 左下是全局消息区
 地区消息与传闻锚定到地图节点旁
-右侧是节点上下文面板，顶部横向页签
+右侧是节点上下文面板，面板内左侧纵向页签
 行动卡不使用图片，先保证功能可靠
 规划阶段通过右侧行动卡设置参数并加入规划
 底部预算条只展示，不直接编辑
@@ -128,12 +128,12 @@ MainTurnWorkbenchRoot
 │  │
 │  ├─ RightNodeContextPanel
 │  │  ├─ NodeContextHeader
-│  │  ├─ NodeContextTopTabs
-│  │  │  ├─ Tab_Detail
-│  │  │  ├─ Tab_ShortActions
-│  │  │  ├─ Tab_LongActions
-│  │  │  ├─ Tab_ResourcesFacilities
-│  │  │  └─ Tab_RisksClues
+│  │  ├─ NodeContextVerticalTabRail
+│  │  │  ├─ VTab_Detail
+│  │  │  ├─ VTab_ShortActions
+│  │  │  ├─ VTab_LongActions
+│  │  │  ├─ VTab_ResourcesFacilities
+│  │  │  └─ VTab_RisksClues
 │  │  ├─ NodeDetailPage
 │  │  ├─ ShortActionPage
 │  │  ├─ LongActionPage
@@ -184,7 +184,7 @@ MainTurnWorkbenchRoot
 | 操作 | 行为 |
 |---|---|
 | 左键点击节点 | 选中节点，右侧打开详情页。 |
-| 左键点击徽记 | 选中节点，右侧打开对应页签。 |
+| 左键点击徽记 | 选中节点，右侧打开对应纵向页签。 |
 | 右键 / 中键 / 空格拖动 | 平移地图。 |
 | 滚轮 | 缩放地图。 |
 | 左键空白点击 | 可取消节点选中，是否关闭右侧面板由后续体验决定。 |
@@ -294,13 +294,14 @@ GlobalNoticeState {
 
 ```text
 只服务当前地图选中节点
-使用顶部横向页签
+使用面板内左侧纵向页签，视觉上可表现为玉简 / 书签 / 卷轴侧签
 展示节点详情、短时行动、长时行动、资源设施、风险线索
 ```
 
 ### 页签
 
 ```text
+纵向排列：
 详情
 短时行动 N
 长时行动 N
@@ -532,7 +533,12 @@ MainTurnWorkbenchRoot : Control
       GlobalCollapsedTab : Button
     RightNodeContextPanel : PanelContainer
       NodeContextHeader : HBoxContainer
-      NodeContextTabs : TabBar
+      NodeContextVerticalTabRail : VBoxContainer
+        VTab_Detail : Button
+        VTab_ShortActions : Button
+        VTab_LongActions : Button
+        VTab_ResourcesFacilities : Button
+        VTab_RisksClues : Button
       NodeContextPages : Control
         NodeDetailPage : ScrollContainer
         ShortActionPage : ScrollContainer
@@ -565,7 +571,7 @@ MainTurnWorkbenchRoot : Control
 | `01_TopPhaseBar` | 冻结，不主动重构。 |
 | `02_Left_PendingChangesCenter` | 替换为左上目标栏 + 左下全局消息区。 |
 | `03_Map_WorldCanvas` | 从中央固定区域扩展为全宽地图视口。 |
-| `04_Right_ContextPanel` | 重构为顶部页签式节点上下文面板。 |
+| `04_Right_ContextPanel` | 重构为左侧纵向页签式节点上下文面板。 |
 | `05_Bottom_CurrentStageActionDock_NoTimeBudget` | 准备态保留；规划态中部显示时间预算条。 |
 | `06_CommonSystemEntrances_BottomLeft_CurrentStage` | 冻结；宗门相关操作统一进入宗门按钮。 |
 | `Reference_TurnTimeBudget_PlanningStage_OutOfMainFrame` | 作为规划态预算条参考，但预算条仅展示，不直接编辑。 |
@@ -581,7 +587,7 @@ MainTurnWorkbenchRoot : Control
 - [ ] 每个 Frame 保留固定顶部栏和底部左下系统入口。
 - [ ] 地图视口在所有状态中覆盖顶部与底部之间的完整区域。
 - [ ] 左上目标栏和左下全局消息区可分别隐藏。
-- [ ] 右侧节点面板是顶部横向页签，不是上下纵向结构。
+- [ ] 右侧节点面板使用面板内左侧纵向页签，不再使用顶部横向页签。
 - [ ] 行动卡无图片，但包含参数区、加入规划、高级设置入口。
 - [ ] 规划态底部预算条只展示，不表达可拖动编辑。
 - [ ] 锁定等待态显示只读预算条和回退。
@@ -598,7 +604,7 @@ MainTurnWorkbenchRoot : Control
 - [ ] 锁定等待态回退取消锁定，返回规划态并保留队列。
 - [ ] 结算开始后不可回退。
 - [ ] 行动卡必须先选择参数，再加入规划。
-- [ ] 地图节点徽记点击打开右侧对应页签。
+- [ ] 地图节点徽记点击打开右侧对应纵向页签。
 
 ## 7.3 系统口径验收
 

@@ -86,8 +86,8 @@ x = 0, 2000, 4000, 6000, 8000, 10000
 | `C_LeftTop_GoalTrackerPanel` | 主目标 + 2 次级目标 + 置顶 + 线索链入口。 |
 | `C_LeftBottom_GlobalNoticePanel` | P0/P1/目标相关全局消息卡、归档、宗门跳转。 |
 | `C_Map_NodeMarker_WithBadges` | 节点本体、最多 3 徽记、`+N`、计划编号。 |
-| `C_Right_NodeContextPanel_Tabs` | 顶部横向页签：详情 / 短时行动 / 长时行动 / 资源设施 / 风险线索。 |
-| `C_ActionCard_NoImage` | 无图片行动卡：标题、标签、说明、参数区、高级设置、加入规划。 |
+| `C_Right_NodeContextPanel_VerticalTabs` | 面板内左侧纵向页签：详情 / 短时行动 / 长时行动 / 资源设施 / 风险线索。 |
+| `C_Right_ActionCard_NoImage` | 无图片行动卡：标题、标签、说明、参数区、高级设置、加入规划。 |
 | `C_Bottom_TurnTimeBudgetBar_ReadOnlyDisplay` | 天级预算条、编号拥挤处理、当前选中行动摘要。 |
 | `C_RightBottom_PlanningControls` | 开始规划 / 锁定提交 / 托管 / 回退，准备态与规划态变体。 |
 | `C_AutopilotPopover` | 托管摘要弹层。 |
@@ -106,7 +106,7 @@ x = 0, 2000, 4000, 6000, 8000, 10000
 3. 右侧行动卡参数选择 → 加入规划 → 底部预算条展示 → 地图节点计划序号。
 4. 锁定提交 → 锁定等待 → 回退取消锁定 → 返回规划阶段。
 5. 托管按钮 → 右下弹层 → 确认托管 / 取消。
-6. 地图节点徽记 → 打开右侧对应页签。
+6. 地图节点徽记 → 打开右侧对应纵向页签。
 
 ---
 
@@ -218,7 +218,7 @@ h = 72
 | 顶部阶段栏 | 当前阶段为个人行动规划。 |
 | 地图视口 | 可见。 |
 | 左上 / 左下 / 右侧面板 | 都可隐藏；默认可见。 |
-| 右侧节点面板 | 顶部页签；行动卡参数区默认展开。 |
+| 右侧节点面板 | 左侧纵向页签；行动卡参数区默认展开。 |
 | 底部预算条 | 可见，只展示不编辑。 |
 | 右下控制组 | `锁定提交`、`托管`、`回退`。 |
 
@@ -438,34 +438,38 @@ h = 72
 
 | 徽记 | 行为 |
 |---|---|
-| 风险 | 打开右侧风险线索页签。 |
-| 传闻 | 打开右侧风险线索页签，定位传闻段。 |
-| 宗门印 | 打开右侧风险线索页签，定位宗门波及段。 |
-| 资源 | 打开资源设施页签。 |
-| 后手 / 卷轴 | 打开风险线索页签，定位后手段。 |
+| 风险 | 打开右侧纵向「风险线索」页签。 |
+| 传闻 | 打开右侧纵向「风险线索」页签，定位传闻段。 |
+| 宗门印 | 打开右侧纵向「风险线索」页签，定位宗门波及段。 |
+| 资源 | 打开右侧纵向「资源设施」页签。 |
+| 后手 / 卷轴 | 打开右侧纵向「风险线索」页签，定位后手段。 |
 | 目标 / 菱形 | 打开详情或风险线索中的目标关联段。 |
 
 ---
 
-## 5.4 右侧节点面板 `C_Right_NodeContextPanel_Tabs`
+## 5.4 右侧节点面板 `C_Right_NodeContextPanel_VerticalTabs`
 
-### 顶部页签
+### 左侧纵向页签
 
 ```text
-详情｜短时行动 N｜长时行动 N｜资源设施 N｜风险线索 N
+详情
+短时行动 N
+长时行动 N
+资源设施 N
+风险线索 N
 ```
 
 ### 页签规则
 
 - 点击节点本体默认进入详情。
-- 点击具体徽记直接进入对应页签。
+- 点击具体徽记直接进入对应纵向页签。
 - 详情页最近变化只显示 2 条。
 - 页签显示数量。
-- 右侧面板可隐藏，不影响地图重排。
+- 页签栏位于右侧面板内部左侧，内容页位于页签栏右侧；面板整体仍可隐藏，不影响地图重排。
 
 ---
 
-## 5.5 行动卡 `C_ActionCard_NoImage`
+## 5.5 行动卡 `C_Right_ActionCard_NoImage`
 
 ### 结构
 
@@ -593,7 +597,7 @@ h = 72
 S_01_Prepare_InfoProcessing_1920x1080
 L_MapViewport_FullWidth
 C_LeftTop_GoalTrackerPanel
-C_ActionCard_NoImage__ShortAction
+C_Right_ActionCard_NoImage__ShortAction
 C_Bottom_TurnTimeBudgetBar__Planning
 ```
 
@@ -606,7 +610,7 @@ C_Bottom_TurnTimeBudgetBar__Planning
 | `01_TopPhaseBar` | 冻结，作为已审核顶部栏参考。 |
 | `02_Left_PendingChangesCenter` | 拆分为 `LeftTop_GoalTrackerPanel` 与 `LeftBottom_GlobalNoticePanel`。 |
 | `03_Map_WorldCanvas` | 扩展为全宽 `MapViewport`；原中央地图只是视口的一部分。 |
-| `04_Right_ContextPanel` | 重构为顶部页签式 `RightNodeContextPanel`。 |
+| `04_Right_ContextPanel` | 重构为左侧纵向页签式 `RightNodeContextPanel`。 |
 | `05_Bottom_CurrentStageActionDock_NoTimeBudget` | 准备态保留右下入口；规划态替换中部为预算条。 |
 | `06_CommonSystemEntrances_BottomLeft_CurrentStage` | 冻结，宗门相关操作统一从宗门按钮进入。 |
 | `Reference_TurnTimeBudget_PlanningStage_OutOfMainFrame` | 作为规划态底部预算条参考，但需改为只展示不编辑。 |

@@ -251,52 +251,65 @@ function createLeftPanels(parent, options = {}) {
 }
 
 function createRightPanel(parent, tab = '详情', readOnly = false) {
-  const p = frame(parent, 'RightNodeContextPanel_TopTabs', 1520, 112, 376, 868, COLORS.panel, COLORS.stroke, 12);
+  const p = frame(parent, 'RightNodeContextPanel_VerticalTabs', 1520, 112, 376, 868, COLORS.panel, COLORS.stroke, 12);
   text(p, 'NodePanelTitle', '黑石岭矿脉', 18, 16, 200, 24, 18, COLORS.text, FONT_BOLD);
   text(p, 'NodePanelReadonly', readOnly ? '只读' : '', 320, 20, 40, 18, 12, COLORS.warn, FONT_MED);
-  const tabs = ['详情', '短时行动 3', '长时行动 2', '资源设施 4', '风险线索 5'];
-  let tx = 14;
-  tabs.forEach((t) => {
-    const active = t.indexOf(tab) === 0;
-    const tw = t.length * 14 + 18;
-    rect(p, `Tab_${t}`, tx, 52, tw, 30, active ? COLORS.green : COLORS.panel2, COLORS.stroke, 8);
-    text(p, `TabText_${t}`, t, tx + 9, 60, tw - 18, 16, 11, active ? '#FFFFFF' : COLORS.subtext, FONT_MED);
-    tx += tw + 6;
+  const rail = frame(p, 'NodeContextVerticalTabRail_v0.9', 14, 52, 58, 792, '#F1E4C1', '#A18452', 10);
+  text(rail, 'VerticalTabRail_Title', '节点\n卷', 8, 10, 42, 36, 11, '#6D5730', FONT_BOLD);
+  const tabs = [
+    ['详情', '详\n情', ''],
+    ['短时行动', '短\n时', '3'],
+    ['长时行动', '长\n时', '2'],
+    ['资源设施', '资\n源', '4'],
+    ['风险线索', '线\n索', '5']
+  ];
+  tabs.forEach((t, i) => {
+    const active = tab.indexOf(t[0]) === 0 || t[0].indexOf(tab) === 0;
+    const y = 108 + i * 80;
+    rect(rail, `VTab_${t[0]}`, 8, y - 52, 42, 72, active ? COLORS.green : COLORS.panel2, active ? COLORS.green : COLORS.stroke, 9);
+    text(rail, `VTabText_${t[0]}`, t[1], 15, y - 43, 28, 36, 12, active ? '#FFFFFF' : COLORS.subtext, active ? FONT_BOLD : FONT_MED);
+    text(rail, `VTabCount_${t[0]}`, t[2], 15, y - 18, 28, 14, 9, active ? '#FDEEC6' : COLORS.muted, FONT_MED);
   });
-  rect(p, `Page_${tab}`, 16, 98, 344, 746, COLORS.panel2, COLORS.stroke, 10);
+  rect(p, 'NodeContextVerticalDivider_v0.9', 76, 52, 1, 792, '#B79B64', '#B79B64', 0);
+  rect(p, `Page_${tab}`, 84, 52, 276, 792, COLORS.panel2, COLORS.stroke, 10);
   if (tab === '详情') {
-    text(p, 'DetailBody', '类型：资源型地理节点\n区域：边界荒野\n控制权：云麓宗影响 56%，赤砂门 31%\n危险：中｜灵气：中等波动\n资源：玄铁矿脉、碎灵石、未知伴生矿\n\n最近变化：\n1. 云麓宗驻守推进至 47%。\n2. 外宗活动增加，路线风险上升。\n\n信息来源：宗门摘要 + 本地传闻\n可见性：sect_visible / rumor_visible', 28, 116, 320, 300, 12, COLORS.subtext, FONT_REG);
+    text(p, 'DetailBody', '类型：资源型地理节点\n区域：边界荒野\n控制权：云麓宗影响 56%，赤砂门 31%\n危险：中｜灵气：中等波动\n资源：玄铁矿脉、碎灵石、未知伴生矿\n\n最近变化：\n1. 云麓宗驻守推进至 47%。\n2. 外宗活动增加，路线风险上升。\n\n信息来源：宗门摘要 + 本地传闻\n可见性：sect_visible / rumor_visible', 96, 74, 252, 300, 12, COLORS.subtext, FONT_REG);
   } else if (tab === '短时行动') {
-    actionCard(p, '调查矿脉外围', '短时｜约 4 小时｜风险中', '检查矿脉异动来源，可能获得资源线索或路线风险信息。', 28, 116);
-    actionCard(p, '协助外围警戒', '短时｜8 小时｜宗门相关', '降低路线突发风险，可能提升宗门驻守进度。', 28, 330);
+    actionCard(p, '调查矿脉外围', '短时｜约 4 小时｜风险中', '检查矿脉异动来源，可能获得资源线索或路线风险信息。', 96, 82);
+    actionCard(p, '协助外围警戒', '短时｜8 小时｜宗门相关', '降低路线突发风险，可能提升宗门驻守进度。', 96, 296);
   } else if (tab === '长时行动') {
-    actionCard(p, '探索黑石岭深处', '长时｜可投入｜风险中', '投入越多，发现资源槽、隐藏层或事件入口的概率越高。', 28, 116, ['半天', '1 天', '2 天', '投入剩余时间']);
-    actionCard(p, '布置藏物后手', '长时｜固定 2 天｜风险：暴露', '在当前节点封存少量资产，写入轮回账本。', 28, 350, ['普通隐蔽', '谨慎隐蔽']);
+    actionCard(p, '探索黑石岭深处', '长时｜可投入｜风险中', '投入越多，发现资源槽、隐藏层或事件入口的概率越高。', 96, 82, ['半天', '1 天', '2 天', '投入剩余时间']);
+    actionCard(p, '布置藏物后手', '长时｜固定 2 天｜风险：暴露', '在当前节点封存少量资产，写入轮回账本。', 96, 316, ['普通隐蔽', '谨慎隐蔽']);
   } else if (tab === '资源设施') {
-    text(p, 'ResourcesBody', '资源槽 3\n- 玄铁矿脉｜丰度下降｜采集难度中\n- 碎灵石矿点｜已知｜采集难度低\n- 未知伴生矿｜传闻｜需调查\n\n设施 2\n- 临时驻守营地｜云麓宗｜建设中\n- 废弃矿棚｜可调查', 28, 116, 320, 260, 12, COLORS.subtext, FONT_REG);
+    text(p, 'ResourcesBody', '资源槽 3\n- 玄铁矿脉｜丰度下降｜采集难度中\n- 碎灵石矿点｜已知｜采集难度低\n- 未知伴生矿｜传闻｜需调查\n\n设施 2\n- 临时驻守营地｜云麓宗｜建设中\n- 废弃矿棚｜可调查', 96, 74, 252, 260, 12, COLORS.subtext, FONT_REG);
   } else {
-    text(p, 'RisksBody', '线索｜坊市｜未证实\n云麓山道有妖兽踪迹。\n[加入关注] [预估路线]\n\n宗门波及｜云麓宗\n当前持续行动：强化黑石岭驻守\n进度：47%\n阻碍：材料不足、边境冲突升温\n[打开宗门面板] [加入规划：协助驻守]\n\n后手感应｜账本\n雾中旧洞府方向出现模糊呼应。', 28, 116, 320, 320, 12, COLORS.subtext, FONT_REG);
+    text(p, 'RisksBody', '线索｜坊市｜未证实\n云麓山道有妖兽踪迹。\n[加入关注] [预估路线]\n\n宗门波及｜云麓宗\n当前持续行动：强化黑石岭驻守\n进度：47%\n阻碍：材料不足、边境冲突升温\n[打开宗门面板] [加入规划：协助驻守]\n\n后手感应｜账本\n雾中旧洞府方向出现模糊呼应。', 96, 74, 252, 320, 12, COLORS.subtext, FONT_REG);
   }
   return p;
 }
 
 function actionCard(parent, title, tags, desc, x, y, options = ['2 小时', '4 小时', '8 小时']) {
-  rect(parent, `ActionCard_${title}`, x, y, 320, 190, COLORS.panel, COLORS.stroke, 10);
-  text(parent, `ActionTitle_${title}`, title, x + 14, y + 12, 280, 20, 14, COLORS.text, FONT_BOLD);
-  text(parent, `ActionTags_${title}`, tags, x + 14, y + 38, 280, 18, 11, COLORS.warn, FONT_MED);
-  text(parent, `ActionDesc_${title}`, desc, x + 14, y + 62, 286, 34, 12, COLORS.subtext, FONT_REG);
+  rect(parent, `ActionCard_${title}`, x, y, 252, 190, COLORS.panel, COLORS.stroke, 10);
+  text(parent, `ActionTitle_${title}`, title, x + 14, y + 12, 214, 20, 14, COLORS.text, FONT_BOLD);
+  text(parent, `ActionTags_${title}`, tags, x + 14, y + 38, 214, 18, 11, COLORS.warn, FONT_MED);
+  text(parent, `ActionDesc_${title}`, desc, x + 14, y + 62, 218, 34, 12, COLORS.subtext, FONT_REG);
   text(parent, `ParamLabel_${title}`, '投入时间', x + 14, y + 106, 60, 16, 11, COLORS.text, FONT_MED);
   let ox = x + 74;
+  let oy = y + 102;
   options.forEach((o) => {
-    const ww = Math.max(46, o.length * 12 + 12);
-    rect(parent, `Param_${title}_${o}`, ox, y + 102, ww, 24, COLORS.panel2, COLORS.stroke, 8);
-    text(parent, `ParamText_${title}_${o}`, o, ox + 6, y + 108, ww - 12, 14, 10, COLORS.subtext, FONT_MED);
+    const ww = Math.min(Math.max(46, o.length * 12 + 12), 84);
+    if (ox + ww > x + 236) {
+      ox = x + 14;
+      oy += 30;
+    }
+    rect(parent, `Param_${title}_${o}`, ox, oy, ww, 24, COLORS.panel2, COLORS.stroke, 8);
+    text(parent, `ParamText_${title}_${o}`, o, ox + 6, oy + 6, ww - 12, 14, 10, COLORS.subtext, FONT_MED);
     ox += ww + 6;
   });
-  rect(parent, `AddPlan_${title}`, x + 14, y + 144, 120, 30, COLORS.green, COLORS.green, 8);
-  text(parent, `AddPlanText_${title}`, '加入规划', x + 44, y + 151, 70, 16, 12, '#FFFFFF', FONT_MED);
-  rect(parent, `Advanced_${title}`, x + 146, y + 144, 90, 30, COLORS.panel2, COLORS.stroke, 8);
-  text(parent, `AdvancedText_${title}`, '高级设置', x + 166, y + 151, 60, 16, 12, COLORS.subtext, FONT_MED);
+  rect(parent, `AddPlan_${title}`, x + 14, y + 144, 104, 30, COLORS.green, COLORS.green, 8);
+  text(parent, `AddPlanText_${title}`, '加入规划', x + 31, y + 151, 70, 16, 12, '#FFFFFF', FONT_MED);
+  rect(parent, `Advanced_${title}`, x + 128, y + 144, 90, 30, COLORS.panel2, COLORS.stroke, 8);
+  text(parent, `AdvancedText_${title}`, '高级设置', x + 143, y + 151, 60, 16, 12, COLORS.subtext, FONT_MED);
 }
 
 function createBottom(parent, mode) {

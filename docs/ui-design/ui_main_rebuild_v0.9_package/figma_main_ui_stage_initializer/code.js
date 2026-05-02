@@ -139,6 +139,14 @@ function text(parent, name, content, x, y, w, h, size = 14, color = COLORS.text,
   return t;
 }
 
+function centerText(parent, name, content, x, y, w, h, size = 14, color = COLORS.text, font = FONT_REG) {
+  const t = text(parent, name, content, x, y, w, h, size, color, font);
+  t.textAlignHorizontal = 'CENTER';
+  t.textAlignVertical = 'CENTER';
+  t.lineHeight = { unit: 'PIXELS', value: Math.round(size * 1.45) };
+  return t;
+}
+
 function chip(parent, label, x, y, fill = COLORS.greenLight, color = COLORS.green, w = null) {
   const width = w || Math.max(48, label.length * 14 + 18);
   rect(parent, `Chip_${label}`, x, y, width, 24, fill, COLORS.stroke, 12);
@@ -320,25 +328,41 @@ function createBottom(parent, mode) {
     text(bottom, `SystemEntryText_${e}`, e, 30 + i * 46, 29, 26, 14, 11, COLORS.text, FONT_MED);
   });
   if (mode === 'prepare') {
-    diamond(bottom, 'StartPlanning_Diamond', 1510, 16, 44, COLORS.green, '开始规划');
-    ellipse(bottom, 'Autopilot_Round', 1624, 18, 40, 40, COLORS.gold);
-    text(bottom, 'AutopilotText', '托管', 1630, 30, 28, 16, 11, '#FFFFFF', FONT_MED);
+    commandButton(bottom, 'StartPlanning', '开始规划');
+    ellipse(bottom, 'Autopilot_Round', 1622, 16, 44, 44, COLORS.gold);
+    centerText(bottom, 'AutopilotText', '托管', 1622, 16, 44, 44, 11, '#FFFFFF', FONT_MED);
   } else {
     createBudget(bottom, mode);
     if (mode === 'locked') {
       ellipse(bottom, 'Back_Round', 1760, 18, 40, 40, COLORS.panel2, COLORS.gold);
-      text(bottom, 'BackText', '回退', 1766, 30, 28, 16, 11, COLORS.text, FONT_MED);
+      centerText(bottom, 'BackText', '回退', 1760, 18, 40, 40, 10, COLORS.text, FONT_MED);
     } else {
-      diamond(bottom, 'LockSubmit_Diamond', 1510, 16, 44, COLORS.green, '锁定提交');
-      ellipse(bottom, 'Autopilot_Round', 1624, 18, 40, 40, COLORS.gold);
-      text(bottom, 'AutopilotText', '托管', 1630, 30, 28, 16, 11, '#FFFFFF', FONT_MED);
-      ellipse(bottom, 'Back_Round', 1710, 22, 32, 32, COLORS.panel2, COLORS.gold);
-      text(bottom, 'BackText', '回退', 1714, 32, 24, 12, 10, COLORS.text, FONT_MED);
+      commandButton(bottom, 'LockSubmit', '锁定提交');
+      ellipse(bottom, 'Autopilot_Round', 1622, 16, 44, 44, COLORS.gold);
+      centerText(bottom, 'AutopilotText', '托管', 1622, 16, 44, 44, 11, '#FFFFFF', FONT_MED);
+      ellipse(bottom, 'Back_Round', 1710, 20, 36, 36, COLORS.panel2, COLORS.gold);
+      centerText(bottom, 'BackText', '回退', 1710, 20, 36, 36, 10, COLORS.text, FONT_MED);
     }
   }
 }
 
-function diamond(parent, name, x, y, size, color, label) {
+function commandButton(parent, baseName, label) {
+  const plate = rect(parent, `${baseName}_CommandPlate_v0.9`, 1458, 14, 142, 44, '#2D5A4B', COLORS.gold, 9);
+  plate.effects = [{
+    type: 'DROP_SHADOW',
+    color: { r: 0.1686274558, g: 0.1411764771, b: 0.1019607857, a: 0.18 },
+    offset: { x: 0, y: 4 },
+    radius: 10,
+    spread: 0,
+    visible: true,
+    blendMode: 'NORMAL'
+  }];
+  rect(parent, `${baseName}_CommandPlate_LeftCord_v0.9`, 1464, 20, 3, 32, COLORS.gold, null, 2);
+  diamond(parent, `${baseName}_Diamond`, 1475, 24, 24, COLORS.gold, COLORS.panel);
+  centerText(parent, `${baseName}_Diamond_Label`, label, 1506, 21, 82, 30, 12, '#FFFFFF', FONT_BOLD);
+}
+
+function diamond(parent, name, x, y, size, fill, strokeColor = null) {
   const poly = figma.createPolygon();
   poly.name = name;
   poly.pointCount = 4;
@@ -346,10 +370,10 @@ function diamond(parent, name, x, y, size, color, label) {
   poly.y = y;
   poly.resize(size, size);
   poly.rotation = 45;
-  poly.fills = paint(color);
-  poly.strokes = stroke(color);
+  poly.fills = paint(fill);
+  poly.strokes = stroke(strokeColor || fill);
   parent.appendChild(poly);
-  text(parent, `${name}_Label`, label, x - 26, y + 50, 100, 16, 11, COLORS.text, FONT_BOLD);
+  return poly;
 }
 
 function createBudget(parent, mode) {

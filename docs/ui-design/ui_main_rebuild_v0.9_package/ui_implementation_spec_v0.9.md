@@ -142,8 +142,8 @@ MainTurnWorkbenchRoot
 │  │  └─ RightPanelCollapsedTab
 │  │
 │  └─ RightBottomPlanningControls
-│     ├─ StartPlanningDiamondButton
-│     ├─ LockSubmitDiamondButton
+│     ├─ StartPlanningCommandPlateButton
+│     ├─ LockSubmitCommandPlateButton
 │     ├─ AutopilotRoundButton
 │     ├─ BackSmallRoundButton
 │     └─ AutopilotPopover
@@ -430,14 +430,14 @@ PersonalActionInstruction {
 ### 准备态
 
 ```text
-StartPlanningDiamondButton
+StartPlanningCommandPlateButton
 AutopilotRoundButton
 ```
 
 ### 规划态
 
 ```text
-LockSubmitDiamondButton
+LockSubmitCommandPlateButton
 AutopilotRoundButton
 BackSmallRoundButton
 ```
@@ -547,8 +547,8 @@ MainTurnWorkbenchRoot : Control
         RisksCluesPage : ScrollContainer
       RightPanelCollapsedTab : Button
     RightBottomPlanningControls : Control
-      StartPlanningButton : TextureButton
-      LockSubmitButton : TextureButton
+      StartPlanningCommandPlate : TextureButton
+      LockSubmitCommandPlate : TextureButton
       AutopilotButton : TextureButton
       BackButton : TextureButton
       AutopilotPopover : PanelContainer
@@ -590,6 +590,7 @@ MainTurnWorkbenchRoot : Control
 - [ ] 右侧节点面板使用面板内左侧纵向页签，不再使用顶部横向页签。
 - [ ] 行动卡无图片，但包含参数区、加入规划、高级设置入口。
 - [ ] 规划态底部预算条只展示，不表达可拖动编辑。
+- [ ] 右下 `开始规划` / `锁定提交` 使用底栏内命令牌按钮，文字内嵌且不超出 `BottomDockLayer`。
 - [ ] 锁定等待态显示只读预算条和回退。
 - [ ] 托管摘要是右下按钮旁弹层，不是居中模态框。
 
@@ -639,7 +640,7 @@ MainTurnWorkbenchRoot : Control
 
 1. 左右面板的精确宽度和动画。
 2. 地图节点徽记的具体图形语言。
-3. 右下菱形 / 圆形按钮的最终视觉。
+3. 右下按钮的纹样、悬停态与按下态细节。
 4. 预算条在 7 天、10 天配置下的拥挤策略。
 5. 插入事件态是否沿用同一右侧面板或替换为事件专用面板。
 6. 目标栏“查看全部目标”的完整目标管理界面。

@@ -1,0 +1,7 @@
+{
+  "name": "Xiuxian Main UI Stage Initializer v0.9",
+  "id": "xiuxian-main-ui-stage-initializer-v09",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"]
+}

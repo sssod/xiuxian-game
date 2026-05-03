@@ -95,9 +95,11 @@ Before changing product, design, UI, data, or implementation-facing docs, read t
 
 ## External Resource Index
 
-Checked on 2026-05-01.
+Resource check dates are recorded per section.
 
 ### Notion
+
+Checked on 2026-05-01.
 
 Current v2.1 package entry:
 
@@ -120,6 +122,8 @@ Treat historical Notion pages as traceability only when v2.1 is silent.
 
 ### Figma
 
+Checked on 2026-05-04.
+
 Current Figma UI file:
 
 - `XiuxianUI`
@@ -128,11 +132,20 @@ Current Figma UI file:
 
 Located page and frames:
 
-- Page: `UI_TurnStart_InfoProcessing_v0.1`, node `1:2`
-- Main UI frame: `MainFrame_1920x1080_TurnStart_InfoProcessing`, node `1:3`
-- Component frame: `ComponentLibrary_TurnStart`, node `1:4`
+- Current main UI page: `UI_MainFrame_Rebuild_v0.9`, node `89:2`
+- State frame: `State_01_Prepare_InfoProcessing_1920x1080`, node `89:3`
+- State frame: `State_02_Planning_WithContinuation_1920x1080`, node `89:124`
+- State frame: `State_03_Planning_ContinuationCancelled_1920x1080`, node `89:288`
+- State frame: `State_04_LockedWaiting_Readonly_1920x1080`, node `89:452`
+- State frame: `State_05_AutopilotPreview_1920x1080`, node `89:583`
+- State frame: `State_06_SidePanelsCollapsed_1920x1080`, node `89:725`
+- Component page: `UI_MainFrame_Components_v0.9`, node `89:822`
+- Component library frame: `ComponentLibrary_FilledSpec_v0.9`, node `93:2`
+- Flow page: `UI_MainFrame_Flows_v0.9`, node `89:937`
+- Flow detail frame: `Flow_DetailFill_v0.9`, node `96:2`
+- Archived old page: `[archived]UI_TurnStart_InfoProcessing_v0.1`, node `1:2`
 
-The current Figma artifact represents the turn-start / information-processing state of the large-world-map-driven turn action workbench. It includes the top phase bar, left pending changes center, central world map canvas, right context and goal panel, bottom turn time budget bar, and a local component library for stage chips, node markers, info cards, buttons, day budget segments, layer toggles, status pills, and tags.
+The current Figma artifact is the v0.9 rebuild of the large-world-map-driven turn action workbench. It contains six main UI state frames covering preparation, planning with continuation, planning after continuation cancellation, locked waiting, autopilot preview, and side-panel-collapsed layouts. Each state frame uses `MapViewport_FullWidth` for the map surface; node-level map connectivity is represented by `Map_RouteConnectivity_Essential_v0.9`, keeping only known passable routes, selected plan routes, and rumor / hidden routes as visible connection types.
 
 Subscribed libraries observed in the file include Material 3 Design Kit, Simple Design System, and Apple platform UI kits. Do not assume these are the project's own design system unless a specific Figma node uses them.
 

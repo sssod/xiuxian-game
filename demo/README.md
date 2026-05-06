@@ -8,6 +8,7 @@ Current scope:
 - Phase A runnable skeleton: local room, turn state, lock/settle, result packages, JSON save/load, TurnReplay, and Debug panel
 - Phase B-C demo loop: map/action/event path, sect entry, MethodState, active cultivation, resource input, residual effects
 - Phase D demo loop: SectState, sect storage, resource request, unique sect AI continuous action, ResourceSlotState gathering, sect/world rumors
+- Phase E demo loop: bottleneck, breakthrough preparation, key item instances, fixed-duration breakthrough chain, fail tags, ledger stub, sect summary, demo summary
 
 Run the current Godot demo:
 
@@ -22,6 +23,7 @@ Run the headless self-tests:
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/phase_b_self_test.gd
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/phase_c_self_test.gd
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/phase_d_self_test.gd
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/phase_e_self_test.gd
 ```
 
 Runtime saves and replays are written under `demo/godot/runtime/` and are ignored by git.

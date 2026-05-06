@@ -18,6 +18,9 @@ static func merge(runtime: Dictionary, packages: Array) -> Dictionary:
 		_apply_dictionary_deltas(runtime, "item_stacks", package.get("state_deltas", {}).get("item_stacks", {}))
 		_apply_dictionary_deltas(runtime, "item_instances", package.get("state_deltas", {}).get("item_instances", {}))
 		_apply_dictionary_deltas(runtime, "active_resource_effects", package.get("state_deltas", {}).get("active_resource_effects", {}))
+		_apply_dictionary_deltas(runtime, "ledger_states", package.get("state_deltas", {}).get("ledger_states", {}))
+		_apply_dictionary_deltas(runtime, "true_spirits", package.get("state_deltas", {}).get("true_spirits", {}))
+		_apply_demo_summary_delta(runtime, package.get("state_deltas", {}).get("demo_summary", {}))
 		_append_state_entries(runtime, "rumor_pool", package.get("state_deltas", {}).get("rumor_pool_entries", []))
 		_append_state_entries(runtime, "asset_logs", package.get("state_deltas", {}).get("asset_log_entries", []))
 		_append_state_entries(runtime, "character_logs", package.get("state_deltas", {}).get("character_log_entries", []))
@@ -120,9 +123,23 @@ static func _apply_asset_container_deltas(runtime: Dictionary, container_deltas:
 				for ref_id in delta[delta_key]:
 					if not containers[container_id][target_key].has(ref_id):
 						containers[container_id][target_key].append(ref_id)
+			elif delta_key.begins_with("remove_"):
+				var target_key := delta_key.substr(7)
+				if not containers[container_id].has(target_key):
+					containers[container_id][target_key] = []
+				for ref_id in delta[delta_key]:
+					containers[container_id][target_key].erase(ref_id)
 			else:
 				containers[container_id][delta_key] = delta[key]
 	runtime["asset_containers"] = containers
+
+static func _apply_demo_summary_delta(runtime: Dictionary, demo_summary_delta: Dictionary) -> void:
+	if demo_summary_delta.is_empty():
+		return
+	var current: Dictionary = runtime.get("demo_summary", {})
+	for key in demo_summary_delta.keys():
+		current[key] = demo_summary_delta[key]
+	runtime["demo_summary"] = current
 
 static func _append_state_entries(runtime: Dictionary, key: String, entries: Array) -> void:
 	if entries.is_empty():

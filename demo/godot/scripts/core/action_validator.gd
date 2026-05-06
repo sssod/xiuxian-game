@@ -76,7 +76,7 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 				if duration < required_hours:
 					errors.append("move_to_node planned_duration_hours must cover route time: %dh required." % required_hours)
 				simulated_locations[actor_id] = target_node
-		elif action_id in ["ask_for_rumor", "explore_node", "gather_resource", "active_cultivation", "study_method", "join_sect_event"]:
+		elif action_id in ["ask_for_rumor", "explore_node", "gather_resource", "active_cultivation", "study_method", "join_sect_event", "prepare_breakthrough", "attempt_breakthrough"]:
 			var action_node := ""
 			if typeof(target) == TYPE_DICTIONARY:
 				action_node = str(target.get("target_id", ""))
@@ -91,6 +91,19 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 				errors.append("active_cultivation requires an existing MethodState set as main_dao_method_ref.")
 			if action_id == "gather_resource" and not _node_has_available_resource_slot(runtime, action_node):
 				errors.append("gather_resource requires an available ResourceSlotState at %s." % action_node)
+			if action_id == "prepare_breakthrough" and not _has_main_dao_method(runtime, actor_id):
+				errors.append("prepare_breakthrough requires an existing MethodState set as main_dao_method_ref.")
+			if action_id == "prepare_breakthrough" and not _is_demo_bottleneck_reached(runtime, actor_id):
+				errors.append("prepare_breakthrough requires demo bottleneck state before key preparation.")
+			if action_id == "attempt_breakthrough":
+				var fixed_duration := int(template.get("fixed_duration_hours", template.get("default_duration_hours", 48)))
+				if duration != fixed_duration:
+					errors.append("attempt_breakthrough must use fixed_duration_hours=%dh." % fixed_duration)
+				var valid_locations: Array = template.get("valid_location_ids", [])
+				if not valid_locations.has(action_node):
+					errors.append("attempt_breakthrough location is invalid for Phase E demo: %s." % action_node)
+				for missing_ref in _breakthrough_gap_refs(runtime, actor_id):
+					errors.append("attempt_breakthrough missing prerequisite: %s." % missing_ref)
 		elif action_id == "request_sect_resource":
 			if typeof(target) != TYPE_DICTIONARY or str(target.get("target_type", "")) != "sect":
 				errors.append("request_sect_resource target must be a sect target.")
@@ -161,6 +174,40 @@ static func _has_main_dao_method(runtime: Dictionary, actor_id: String) -> bool:
 	var character: Dictionary = runtime.get("incarnations", {}).get(actor_id, {})
 	var main_method_ref := str(character.get("cultivation", {}).get("main_dao_method_ref", ""))
 	return main_method_ref != "" and runtime.get("method_states", {}).has(main_method_ref)
+
+static func _breakthrough_gap_refs(runtime: Dictionary, actor_id: String) -> Array:
+	var gaps := []
+	var character: Dictionary = runtime.get("incarnations", {}).get(actor_id, {})
+	var cultivation: Dictionary = character.get("cultivation", {})
+	if str(cultivation.get("current_stage_code", "")) != "A-2" or float(cultivation.get("cultivation_progress", 0.0)) < 120.0:
+		gaps.append("demo_bottleneck_not_reached")
+	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
+		gaps.append("breakthrough_required_state_missing")
+	var main_method_ref := str(cultivation.get("main_dao_method_ref", ""))
+	var method_state: Dictionary = runtime.get("method_states", {}).get(main_method_ref, {})
+	if str(method_state.get("current_effective_cap_stage", "")) != "A-3":
+		gaps.append("main_method_cap_below_A-3")
+	if not _has_item_instance_available(runtime, actor_id, "trial_token_instance"):
+		gaps.append("trial_token_instance")
+	if not _has_item_instance_available(runtime, actor_id, "breakthrough_catalyst_instance"):
+		gaps.append("breakthrough_catalyst_instance")
+	return gaps
+
+static func _is_demo_bottleneck_reached(runtime: Dictionary, actor_id: String) -> bool:
+	var cultivation: Dictionary = runtime.get("incarnations", {}).get(actor_id, {}).get("cultivation", {})
+	return str(cultivation.get("current_stage_code", "")) == "A-2" and float(cultivation.get("cultivation_progress", 0.0)) >= 120.0 and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
+
+static func _has_item_instance_available(runtime: Dictionary, actor_id: String, item_template_id: String) -> bool:
+	var container_id := _inventory_container_id(runtime, actor_id)
+	for item_id in runtime.get("asset_containers", {}).get(container_id, {}).get("item_instance_refs", []):
+		var instance: Dictionary = runtime.get("item_instances", {}).get(str(item_id), {})
+		if str(instance.get("item_template_id", "")) != item_template_id:
+			continue
+		var instance_state: Dictionary = instance.get("instance_state", {})
+		if bool(instance_state.get("consumed", false)):
+			continue
+		return true
+	return false
 
 static func _inventory_container_id(runtime: Dictionary, actor_id: String) -> String:
 	return str(runtime.get("incarnations", {}).get(actor_id, {}).get("inventory_container_ref", {}).get("container_id", ""))

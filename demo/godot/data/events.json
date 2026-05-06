@@ -51,5 +51,32 @@
 		"reward_item_instances": ["basic_dao_method_carrier"],
 		"reward_item_stacks": [{"item_template_id": "qingling_pill", "amount": 1}],
 		"rumor_text": "云麓宗收下新入门外门弟子，并发下入门道功与一枚清灵丹。"
+	},
+	{
+		"id": "breakthrough_preparation_shortage",
+		"display_name": "破境准备清点",
+		"phase": "E",
+		"trigger_scope": "breakthrough_preparation",
+		"trigger_node_id": "node_outer_sect_room",
+		"consumed_hours": 24,
+		"result_package_policy": "event_outputs_delta_only",
+		"reveal_nodes": ["node_abandoned_cave"],
+		"reward_item_instances": ["trial_token_instance", "breakthrough_catalyst_instance"],
+		"support_authorization": "demo_breakthrough_support",
+		"rumor_text": "云麓宗执事点明破境缺口，发下一枚试炼令，并指向废弃洞府所得的破境引线索。"
+	},
+	{
+		"id": "breakthrough_chain_basic",
+		"display_name": "压缩破境链",
+		"phase": "E",
+		"trigger_scope": "breakthrough_chain",
+		"consumed_hours": 48,
+		"result_package_policy": "event_outputs_delta_only",
+		"choice_ids": ["stabilize_foundation", "follow_yunlu_formula", "hold_inner_breath"],
+		"success_threshold": 7,
+		"survive_threshold": 4,
+		"success_stage_code": "B-1",
+		"fail_reason_tags": ["foundation_unstable", "resource_shortage", "mind_shaken", "location_mismatch", "outside_interference"],
+		"rumor_text": "云麓宗一名外门弟子完成压缩破境试炼，宗门记录已更新。"
 	}
 ]

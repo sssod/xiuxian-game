@@ -196,6 +196,11 @@ The repo is currently documentation-first. Do not invent engine, backend, databa
 - When updating governance, keep resource links, checked dates, and source precedence current.
 - If Notion or Figma resources move, update the External Resource Index with the new URL, title, and checked date.
 
+## Demo Test Notes
+
+- Checked on 2026-05-06: Godot headless self-tests may need permission to write `user://logs` outside the workspace sandbox. A first sandboxed run can fail or crash while opening a Godot log file such as `user://logs/godot2026-05-06T21.10.09.log`; rerun the same headless command with approved escalation before treating it as a test failure.
+- On 2026-05-06, after rerunning Godot headless with approved escalation, Phase A-E demo self-tests all passed.
+
 ## Useful Commands
 
 ```bash

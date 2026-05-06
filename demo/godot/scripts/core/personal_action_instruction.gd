@@ -85,6 +85,18 @@ static func make_request_sect_resource(actor_id := DemoConstants.LOCAL_CHARACTER
 		"status": "draft"
 	}
 
+static func make_prepare_breakthrough(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "", planned_duration_hours := 24) -> Dictionary:
+	return make_node_action("prepare_breakthrough", actor_id, sequence, node_id, planned_duration_hours)
+
+static func make_attempt_breakthrough(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "", use_stability_talisman := false, choice_id := "stabilize_foundation") -> Dictionary:
+	var instruction := make_node_action("attempt_breakthrough", actor_id, sequence, node_id, 48)
+	instruction["breakthrough_choices"] = [choice_id]
+	if use_stability_talisman:
+		var binding := make_stability_talisman_binding(instruction["instruction_id"], actor_id, 48)
+		instruction["resource_bindings"] = [binding]
+		instruction["resource_inputs"] = [binding]
+	return instruction
+
 static func make_qingling_pill_binding(instruction_id: String, actor_id := DemoConstants.LOCAL_CHARACTER_ID, planned_use_hours := 24) -> Dictionary:
 	return {
 		"binding_id": "binding_qingling_%s" % instruction_id,
@@ -103,6 +115,27 @@ static func make_qingling_pill_binding(instruction_id: String, actor_id := DemoC
 		"consume_on_action_start": true,
 		"residual_policy": "stable_suspend",
 		"stack_group": "cultivation_main_resource",
+		"created_turn_id": 0
+	}
+
+static func make_stability_talisman_binding(instruction_id: String, actor_id := DemoConstants.LOCAL_CHARACTER_ID, planned_use_hours := 48) -> Dictionary:
+	return {
+		"binding_id": "binding_stability_%s" % instruction_id,
+		"instruction_id": instruction_id,
+		"actor_ref": actor_id,
+		"resource_ref": "stability_talisman",
+		"resource_effect_template_id": "stability_talisman_effect",
+		"source_container_ref": {
+			"container_type": "CharacterInventory",
+			"container_id": "container_character_local_inventory"
+		},
+		"effect_channel": "mind_stability",
+		"timing_mode": "compatible_action_hours",
+		"max_effective_hours": 48,
+		"planned_use_hours": planned_use_hours,
+		"consume_on_action_start": true,
+		"residual_policy": "stable_suspend",
+		"stack_group": "breakthrough_stability_resource",
 		"created_turn_id": 0
 	}
 

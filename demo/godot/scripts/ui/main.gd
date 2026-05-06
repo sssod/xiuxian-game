@@ -32,7 +32,10 @@ var study_method_button: Button
 var cultivation_button: Button
 var cultivation_with_pill_button: Button
 var request_qingling_button: Button
+var request_stability_button: Button
 var gather_resource_button: Button
+var prepare_breakthrough_button: Button
+var attempt_breakthrough_button: Button
 var selected_node_id := ""
 
 func _ready() -> void:
@@ -97,10 +100,25 @@ func _build_ui() -> void:
 	request_qingling_button.pressed.connect(_on_add_request_qingling_pressed)
 	toolbar.add_child(request_qingling_button)
 
+	request_stability_button = Button.new()
+	request_stability_button.text = "申请定心符"
+	request_stability_button.pressed.connect(_on_add_request_stability_pressed)
+	toolbar.add_child(request_stability_button)
+
 	gather_resource_button = Button.new()
 	gather_resource_button.text = "采集资源"
 	gather_resource_button.pressed.connect(_on_add_gather_resource_pressed)
 	toolbar.add_child(gather_resource_button)
+
+	prepare_breakthrough_button = Button.new()
+	prepare_breakthrough_button.text = "准备突破"
+	prepare_breakthrough_button.pressed.connect(_on_add_prepare_breakthrough_pressed)
+	toolbar.add_child(prepare_breakthrough_button)
+
+	attempt_breakthrough_button = Button.new()
+	attempt_breakthrough_button.text = "尝试突破"
+	attempt_breakthrough_button.pressed.connect(_on_add_attempt_breakthrough_pressed)
+	toolbar.add_child(attempt_breakthrough_button)
 
 	var clear_button := Button.new()
 	clear_button.text = "清空预案"
@@ -279,12 +297,42 @@ func _on_add_request_qingling_pressed() -> void:
 	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
 	_refresh()
 
+func _on_add_request_stability_pressed() -> void:
+	var queue := _current_queue()
+	var template := ContentLoader.action_template(content, "request_sect_resource")
+	var duration := int(template.get("default_duration_hours", 4))
+	queue.append(PersonalActionInstruction.make_request_sect_resource(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, "sect_yunlu", "stability_talisman", 1, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
 func _on_add_gather_resource_pressed() -> void:
 	var queue := _current_queue()
 	var node_id := _planned_location_after_queue(queue)
 	var template := ContentLoader.action_template(content, "gather_resource")
 	var duration := int(template.get("default_duration_hours", 24))
 	queue.append(PersonalActionInstruction.make_gather_resource(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_prepare_breakthrough_pressed() -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var template := ContentLoader.action_template(content, "prepare_breakthrough")
+	var duration := int(template.get("default_duration_hours", 24))
+	queue.append(PersonalActionInstruction.make_prepare_breakthrough(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_attempt_breakthrough_pressed() -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var use_stability := _has_item_stack("stability_talisman")
+	queue.append(PersonalActionInstruction.make_attempt_breakthrough(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, use_stability, "stabilize_foundation"))
 	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
 	selected_node_id = node_id
 	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
@@ -328,7 +376,7 @@ func _on_load_pressed() -> void:
 	var result := SaveManager.load_game()
 	if result["ok"]:
 		runtime = result["runtime"]
-		RoomFactory.ensure_phase_d_runtime_state(runtime, content)
+		RoomFactory.ensure_phase_e_runtime_state(runtime, content)
 		selected_node_id = _current_or_planned_location()
 		validation_label.text = "读取：%s" % result["path"]
 	else:
@@ -338,7 +386,7 @@ func _on_load_pressed() -> void:
 func _refresh() -> void:
 	if runtime.is_empty():
 		return
-	RoomFactory.ensure_phase_d_runtime_state(runtime, content)
+	RoomFactory.ensure_phase_e_runtime_state(runtime, content)
 	if selected_node_id == "":
 		selected_node_id = _current_or_planned_location()
 	var room: Dictionary = runtime["room_state"]
@@ -368,7 +416,10 @@ func _refresh() -> void:
 	cultivation_button.disabled = not _has_main_method()
 	cultivation_with_pill_button.disabled = not _has_main_method() or not _has_item_stack("qingling_pill")
 	request_qingling_button.disabled = not _has_sect_permission("request_resources") or not _sect_storage_has_stack("sect_yunlu", "qingling_pill")
+	request_stability_button.disabled = not _has_sect_permission("request_resources") or not _sect_storage_has_stack("sect_yunlu", "stability_talisman")
 	gather_resource_button.disabled = not _planned_node_has_resource_slot(_planned_location_after_queue(_current_queue()))
+	prepare_breakthrough_button.disabled = not _is_bottleneck_reached() or not _has_main_method()
+	attempt_breakthrough_button.disabled = not _can_attempt_breakthrough()
 	queue_text.text = _format_queue()
 	character_text.text = _format_character_panel()
 	sect_text.text = _format_sect_panel()
@@ -523,6 +574,10 @@ func _format_character_panel() -> String:
 		])
 	if character.get("active_resource_effect_refs", []).is_empty():
 		lines.append("- 无")
+	lines.append("")
+	lines.append("瓶颈 / 突破:")
+	for line in _breakthrough_panel_lines():
+		lines.append(line)
 	return "\n".join(lines)
 
 func _format_sect_panel() -> String:
@@ -600,6 +655,8 @@ func _format_report(report: Dictionary) -> String:
 			extra += " residual=%sh" % str(item.get("resource_bonus", {}).get("residual_effect_hours", 0))
 		if item.has("method_state_id"):
 			extra += " method=%s" % str(item.get("method_state_id", ""))
+		if item.has("breakthrough_result"):
+			extra += " breakthrough=%s fail_tags=%s" % [str(item.get("breakthrough_result", "")), str(item.get("fail_reason_tags", []))]
 		lines.append("- %s %sh status=%s reason=%s%s" % [
 			str(item.get("action_id", "")),
 			str(item.get("actual_consumed_hours", "")),
@@ -615,6 +672,18 @@ func _format_report(report: Dictionary) -> String:
 				str(item.get("event_id", "")),
 				str(item.get("consumed_hours", "")),
 				str(item.get("effect", ""))
+			])
+	if not report.get("breakthrough_outcomes", []).is_empty():
+		lines.append("")
+		lines.append("突破链:")
+		for item in report.get("breakthrough_outcomes", []):
+			lines.append("- result=%s score=%s stage=%s -> %s fail_tags=%s choices=%s" % [
+				str(item.get("result", "")),
+				str(item.get("score", "")),
+				str(item.get("stage_before", "")),
+				str(item.get("stage_after", "")),
+				str(item.get("fail_reason_tags", [])),
+				str(item.get("choice_ids", []))
 			])
 	lines.append("")
 	lines.append("备注:")
@@ -723,3 +792,77 @@ func _resource_slot_lines_for_node(node_id: String) -> Array:
 			str(slot_state.get("state_tags", []))
 		])
 	return lines
+
+func _breakthrough_panel_lines() -> Array:
+	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
+	var cultivation: Dictionary = character.get("cultivation", {})
+	var lines := [
+		"状态：%s / progress %.1f / bottleneck=%s" % [
+			str(cultivation.get("current_stage_code", "")),
+			float(cultivation.get("cultivation_progress", 0.0)),
+			str(cultivation.get("bottleneck_state", ""))
+		],
+		"主修缺口：%s" % str(_breakthrough_gap_refs()),
+		"关键物：试炼令=%s / 破境引=%s / 定心符=%s" % [
+			str(_has_available_item_instance("trial_token_instance")),
+			str(_has_available_item_instance("breakthrough_catalyst_instance")),
+			str(_has_item_stack("stability_talisman"))
+		],
+		"地点：%s / 宗门护持=%s" % [
+			_node_display_name(_planned_location_after_queue(_current_queue())),
+			str(_has_breakthrough_support())
+		]
+	]
+	var demo_summary: Dictionary = runtime.get("demo_summary", {})
+	if str(demo_summary.get("status", "not_completed")) == "completed":
+		lines.append("Demo 总结：%s；结果=%s；可继续游玩=%s" % [
+			str(demo_summary.get("status", "")),
+			str(demo_summary.get("breakthrough_result", "")),
+			str(demo_summary.get("continue_play_enabled", true))
+		])
+		for item in demo_summary.get("key_experiences", []):
+			lines.append("- %s" % str(item))
+	return lines
+
+func _breakthrough_gap_refs() -> Array:
+	var gaps := []
+	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
+	var cultivation: Dictionary = character.get("cultivation", {})
+	if str(cultivation.get("current_stage_code", "")) != "A-2" or float(cultivation.get("cultivation_progress", 0.0)) < 120.0:
+		gaps.append("demo_bottleneck_not_reached")
+	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
+		gaps.append("breakthrough_required_state_missing")
+	var main_method_ref := str(cultivation.get("main_dao_method_ref", ""))
+	var method_state: Dictionary = runtime.get("method_states", {}).get(main_method_ref, {})
+	if str(method_state.get("current_effective_cap_stage", "")) != "A-3":
+		gaps.append("main_method_cap_below_A-3")
+	if not _has_available_item_instance("trial_token_instance"):
+		gaps.append("trial_token_instance")
+	if not _has_available_item_instance("breakthrough_catalyst_instance"):
+		gaps.append("breakthrough_catalyst_instance")
+	var planned_node := _planned_location_after_queue(_current_queue())
+	if not ["node_outer_sect_room", "node_abandoned_cave"].has(planned_node):
+		gaps.append("breakthrough_location_mismatch")
+	return gaps
+
+func _is_bottleneck_reached() -> bool:
+	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
+	var cultivation: Dictionary = character.get("cultivation", {})
+	return str(cultivation.get("current_stage_code", "")) == "A-2" and float(cultivation.get("cultivation_progress", 0.0)) >= 120.0 and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
+
+func _can_attempt_breakthrough() -> bool:
+	return _breakthrough_gap_refs().is_empty()
+
+func _has_available_item_instance(item_template_id: String) -> bool:
+	var inventory := _inventory_container()
+	for item_id in inventory.get("item_instance_refs", []):
+		var instance: Dictionary = runtime.get("item_instances", {}).get(str(item_id), {})
+		if str(instance.get("item_template_id", "")) != item_template_id:
+			continue
+		if bool(instance.get("instance_state", {}).get("consumed", false)):
+			continue
+		return true
+	return false
+
+func _has_breakthrough_support() -> bool:
+	return runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("special_authorizations", []).has("demo_breakthrough_support")

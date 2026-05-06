@@ -94,12 +94,20 @@ static func create_local_room(content_summary := {}, content := {}) -> Dictionar
 				"status": "placeholder"
 			}
 		},
+		"demo_summary": {
+			"status": "not_completed",
+			"completed_turn_id": 0,
+			"completed_world_hour": 0,
+			"breakthrough_result": "",
+			"continue_play_enabled": true,
+			"key_experiences": []
+		},
 		"content_summary": content_summary
 	}
 
 	runtime["visible_logs"].append(LogUtils.visible("room_created", "本地 demo 房间已创建。", 1, 1, 0))
 	runtime["character_logs"].append(LogUtils.visible("character_created", "第一世角色出生于青禾村。", 1, 1, 0))
-	runtime["debug_logs"].append(LogUtils.debug("room_initialized", "RoomState initialized for Phase D demo skeleton.", 1, 0, room_state.duplicate(true)))
+	runtime["debug_logs"].append(LogUtils.debug("room_initialized", "RoomState initialized for Phase E demo skeleton.", 1, 0, room_state.duplicate(true)))
 	return runtime
 
 static func set_phase(runtime: Dictionary, phase: String) -> void:
@@ -178,6 +186,27 @@ static func ensure_phase_d_runtime_state(runtime: Dictionary, content: Dictionar
 		if not storage.get("item_stack_refs", []).has(stack_id):
 			storage["item_stack_refs"].append(stack_id)
 		runtime["asset_containers"]["container_sect_yunlu_storage"] = storage
+
+static func ensure_phase_e_runtime_state(runtime: Dictionary, content: Dictionary) -> void:
+	ensure_phase_d_runtime_state(runtime, content)
+	if not runtime.has("demo_summary"):
+		runtime["demo_summary"] = {
+			"status": "not_completed",
+			"completed_turn_id": 0,
+			"completed_world_hour": 0,
+			"breakthrough_result": "",
+			"continue_play_enabled": true,
+			"key_experiences": []
+		}
+	if not runtime.has("ledger_states"):
+		runtime["ledger_states"] = {}
+	if not runtime["ledger_states"].has("ledger_local_stub"):
+		runtime["ledger_states"]["ledger_local_stub"] = {
+			"ledger_id": "ledger_local_stub",
+			"spirit_id": DemoConstants.LOCAL_SPIRIT_ID,
+			"entries": [],
+			"status": "placeholder"
+		}
 
 static func _make_map_graph(content: Dictionary) -> Dictionary:
 	var routes := {}

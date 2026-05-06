@@ -1,7 +1,7 @@
 extends RefCounted
 
-const SCHEMA_VERSION := "demo.phase_d.v0.1"
-const CONTENT_VERSION := "demo.content.v0.3"
+const SCHEMA_VERSION := "demo.phase_e.v0.1"
+const CONTENT_VERSION := "demo.content.v0.4"
 const DEFAULT_WORLD_SEED := 20260506
 const DEFAULT_TURN_DURATION_DAYS := 5
 const DEFAULT_DECISION_COUNTDOWN_SECONDS := 120

@@ -96,5 +96,25 @@
 		"tier_code": "M0",
 		"quality_code": "common",
 		"resource_slot_kind": "blackstone_ore"
+	},
+	{
+		"id": "trial_token_instance",
+		"display_name": "试炼令",
+		"item_kind": "key_breakthrough_instance",
+		"phase": "E",
+		"tier_code": "M0",
+		"quality_code": "rare",
+		"required_action_ids": ["attempt_breakthrough"],
+		"trace_policy": "instance_source_and_consumption_log"
+	},
+	{
+		"id": "breakthrough_catalyst_instance",
+		"display_name": "破境引",
+		"item_kind": "key_breakthrough_instance",
+		"phase": "E",
+		"tier_code": "M0",
+		"quality_code": "rare",
+		"required_action_ids": ["attempt_breakthrough"],
+		"trace_policy": "instance_source_and_consumption_log"
 	}
 ]

@@ -77,5 +77,28 @@
 		"resource_input_policy": "contextual",
 		"allowed_resource_inputs": ["qingling_pill"],
 		"requires_main_dao_method": true
+	},
+	{
+		"id": "prepare_breakthrough",
+		"display_name": "准备突破",
+		"phase": "E",
+		"action_kind": "personal_event_chain",
+		"default_duration_hours": 24,
+		"resource_input_policy": "contextual",
+		"event_template_id": "breakthrough_preparation_shortage",
+		"allowed_resource_inputs": ["stability_talisman"]
+	},
+	{
+		"id": "attempt_breakthrough",
+		"display_name": "尝试突破",
+		"phase": "E",
+		"action_kind": "fixed_duration_breakthrough_chain",
+		"default_duration_hours": 48,
+		"fixed_duration_hours": 48,
+		"resource_input_policy": "contextual",
+		"event_template_id": "breakthrough_chain_basic",
+		"required_item_instance_template_ids": ["trial_token_instance", "breakthrough_catalyst_instance"],
+		"allowed_resource_inputs": ["stability_talisman"],
+		"valid_location_ids": ["node_outer_sect_room", "node_abandoned_cave"]
 	}
 ]

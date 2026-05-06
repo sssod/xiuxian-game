@@ -3,7 +3,7 @@ extends RefCounted
 const DemoConstants = preload("res://scripts/core/demo_constants.gd")
 const LogUtils = preload("res://scripts/core/log_utils.gd")
 
-static func create_local_room(content_summary := {}) -> Dictionary:
+static func create_local_room(content_summary := {}, content := {}) -> Dictionary:
 	var turn_config := DemoConstants.default_turn_config()
 	var time_state := DemoConstants.make_time_state(1, 1, 0)
 	var room_state := {
@@ -72,6 +72,10 @@ static func create_local_room(content_summary := {}) -> Dictionary:
 		"last_result_packages": [],
 		"last_report": {},
 		"last_replay": {},
+		"map_graph": _make_map_graph(content),
+		"node_states": _make_node_states(content),
+		"world_logs": [],
+		"rumor_pool": [],
 		"content_summary": content_summary
 	}
 
@@ -83,3 +87,52 @@ static func set_phase(runtime: Dictionary, phase: String) -> void:
 	if not DemoConstants.PHASES.has(phase):
 		return
 	runtime["room_state"]["current_phase"] = phase
+
+static func ensure_phase_b_runtime_state(runtime: Dictionary, content: Dictionary) -> void:
+	if not runtime.has("map_graph"):
+		runtime["map_graph"] = _make_map_graph(content)
+	if not runtime.has("node_states"):
+		runtime["node_states"] = _make_node_states(content)
+	if not runtime.has("world_logs"):
+		runtime["world_logs"] = []
+	if not runtime.has("rumor_pool"):
+		runtime["rumor_pool"] = []
+
+static func _make_map_graph(content: Dictionary) -> Dictionary:
+	var routes := {}
+	for route_id in content.get("tables", {}).get("routes", {}).keys():
+		var route: Dictionary = content["tables"]["routes"][route_id]
+		routes[route_id] = {
+			"route_id": route_id,
+			"from_node": route.get("from_node", ""),
+			"to_node": route.get("to_node", ""),
+			"base_travel_hours": int(route.get("base_travel_hours", 0)),
+			"risk_tags": route.get("risk_tags", []),
+			"state_tags": route.get("state_tags", []),
+			"hidden_state": route.get("hidden_state", "known")
+		}
+	return {
+		"routes": routes,
+		"route_states": {}
+	}
+
+static func _make_node_states(content: Dictionary) -> Dictionary:
+	var node_states := {}
+	for node_id in content.get("tables", {}).get("nodes", {}).keys():
+		var node: Dictionary = content["tables"]["nodes"][node_id]
+		node_states[node_id] = {
+			"node_id": node_id,
+			"display_name": node.get("display_name", node_id),
+			"node_type": node.get("node_type", ""),
+			"region_id": node.get("region_id", ""),
+			"zone_tier": node.get("zone_tier", ""),
+			"visibility_state": node.get("visibility_state", "hidden"),
+			"danger_profile": node.get("danger_profile", {}),
+			"aura_profile": node.get("aura_profile", {}),
+			"control_owner": node.get("control_owner", "none"),
+			"resource_slots": node.get("resource_slots", []),
+			"route_connections": node.get("route_connections", []),
+			"state_tags": node.get("state_tags", []),
+			"world_log_refs": []
+		}
+	return node_states

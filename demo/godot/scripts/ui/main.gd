@@ -20,10 +20,17 @@ var report_text: RichTextLabel
 var visible_log_text: RichTextLabel
 var debug_log_text: RichTextLabel
 var content_label: Label
+var budget_label: Label
+var map_button_grid: GridContainer
+var node_context_text: RichTextLabel
+var add_move_button: Button
+var add_rumor_button: Button
+var selected_node_id := ""
 
 func _ready() -> void:
 	content = ContentLoader.load_content()
-	runtime = RoomFactory.create_local_room(content.get("summary", {}))
+	runtime = RoomFactory.create_local_room(content.get("summary", {}), content)
+	selected_node_id = _current_or_planned_location()
 	_build_ui()
 	_refresh()
 
@@ -46,6 +53,16 @@ func _build_ui() -> void:
 	add_rest_button.text = "添加休整 1 天"
 	add_rest_button.pressed.connect(_on_add_rest_pressed)
 	toolbar.add_child(add_rest_button)
+
+	add_move_button = Button.new()
+	add_move_button.text = "前往所选节点"
+	add_move_button.pressed.connect(_on_add_move_pressed)
+	toolbar.add_child(add_move_button)
+
+	add_rumor_button = Button.new()
+	add_rumor_button.text = "打听当前位置"
+	add_rumor_button.pressed.connect(_on_add_rumor_pressed)
+	toolbar.add_child(add_rumor_button)
 
 	var clear_button := Button.new()
 	clear_button.text = "清空预案"
@@ -78,6 +95,35 @@ func _build_ui() -> void:
 	content_label = Label.new()
 	content_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(content_label)
+
+	budget_label = Label.new()
+	budget_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root.add_child(budget_label)
+
+	var map_row := HBoxContainer.new()
+	map_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_row.add_theme_constant_override("separation", 8)
+	root.add_child(map_row)
+
+	var map_panel := PanelContainer.new()
+	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_row.add_child(map_panel)
+
+	var map_box := VBoxContainer.new()
+	map_box.add_theme_constant_override("separation", 6)
+	map_panel.add_child(map_box)
+
+	var map_title := Label.new()
+	map_title.text = "大地图"
+	map_box.add_child(map_title)
+
+	map_button_grid = GridContainer.new()
+	map_button_grid.columns = 5
+	map_button_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_box.add_child(map_button_grid)
+
+	node_context_text = _make_panel(map_row, "节点上下文")
 
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -112,13 +158,43 @@ func _make_panel(parent: Node, title: String) -> RichTextLabel:
 	return text
 
 func _on_new_room_pressed() -> void:
-	runtime = RoomFactory.create_local_room(content.get("summary", {}))
+	runtime = RoomFactory.create_local_room(content.get("summary", {}), content)
+	selected_node_id = _current_or_planned_location()
 	_refresh()
 
 func _on_add_rest_pressed() -> void:
 	var queue := _current_queue()
 	queue.append(PersonalActionInstruction.make_rest(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, 24))
 	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_move_pressed() -> void:
+	var queue := _current_queue()
+	var from_node := _planned_location_after_queue(queue)
+	if selected_node_id == "":
+		validation_label.text = "未选择目标节点。"
+		return
+	if selected_node_id == from_node:
+		validation_label.text = "角色已经位于%s。" % _node_display_name(selected_node_id)
+		return
+	var route := ContentLoader.route_between(content, from_node, selected_node_id)
+	if route.is_empty():
+		validation_label.text = "没有可用路线：%s → %s。" % [_node_display_name(from_node), _node_display_name(selected_node_id)]
+		return
+	queue.append(PersonalActionInstruction.make_move_to_node(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, route))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_rumor_pressed() -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var template := ContentLoader.action_template(content, "ask_for_rumor")
+	var duration := int(template.get("default_duration_hours", 8))
+	queue.append(PersonalActionInstruction.make_node_action("ask_for_rumor", DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
 	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
 	_refresh()
 
@@ -160,6 +236,8 @@ func _on_load_pressed() -> void:
 	var result := SaveManager.load_game()
 	if result["ok"]:
 		runtime = result["runtime"]
+		RoomFactory.ensure_phase_b_runtime_state(runtime, content)
+		selected_node_id = _current_or_planned_location()
 		validation_label.text = "读取：%s" % result["path"]
 	else:
 		validation_label.text = "读取失败：%s" % result["error"]
@@ -168,6 +246,9 @@ func _on_load_pressed() -> void:
 func _refresh() -> void:
 	if runtime.is_empty():
 		return
+	RoomFactory.ensure_phase_b_runtime_state(runtime, content)
+	if selected_node_id == "":
+		selected_node_id = _current_or_planned_location()
 	var room: Dictionary = runtime["room_state"]
 	var turn_config: Dictionary = room.get("turn_config", DemoConstants.default_turn_config())
 	header_label.text = "phase=%s | turn_id=%s | world_day=%s | world_hour=%s | hour_tick=%s | state_version=%s" % [
@@ -186,6 +267,10 @@ func _refresh() -> void:
 		validation_label.text = "硬校验失败：%s" % "; ".join(validation["errors"])
 
 	content_label.text = "内容表：%s | 每回合 %d 天 / %d 小时" % [str(content.get("summary", {})), int(turn_config.get("turn_duration_days", 5)), DemoConstants.turn_total_hours(turn_config)]
+	budget_label.text = _format_budget(validation)
+	_render_map()
+	node_context_text.text = _format_node_context()
+	add_move_button.disabled = selected_node_id == "" or selected_node_id == _planned_location_after_queue(_current_queue()) or ContentLoader.route_between(content, _planned_location_after_queue(_current_queue()), selected_node_id).is_empty()
 	queue_text.text = _format_queue()
 	visible_log_text.text = _format_logs(runtime.get("visible_logs", []))
 	debug_log_text.text = _format_logs(runtime.get("debug_logs", []))
@@ -201,7 +286,74 @@ func _format_queue() -> String:
 		return "无行动预案。锁定后将按空行动路径休整整回合。"
 	for index in queue.size():
 		var action: Dictionary = queue[index]
-		lines.append("%d. %s" % [index + 1, PersonalActionInstruction.display_name(action)])
+		lines.append("%d. %s" % [index + 1, _format_action_line(action)])
+	return "\n".join(lines)
+
+func _format_budget(validation: Dictionary) -> String:
+	var room: Dictionary = runtime["room_state"]
+	var turn_config: Dictionary = room.get("turn_config", DemoConstants.default_turn_config())
+	var day_labels := []
+	for day_index in int(turn_config.get("turn_duration_days", DemoConstants.DEFAULT_TURN_DURATION_DAYS)):
+		day_labels.append("第%d天" % (day_index + 1))
+	var queue_bits := []
+	for action in _current_queue():
+		queue_bits.append("%s %dh" % [str(action.get("action_id", "")), int(action.get("planned_duration_hours", 0))])
+	return "预算条：%s | 已排 %dh / %dh | %s" % [
+		" ｜ ".join(day_labels),
+		int(validation.get("planned_hours", 0)),
+		int(validation.get("budget_hours", 0)),
+		"；".join(queue_bits)
+	]
+
+func _render_map() -> void:
+	for child in map_button_grid.get_children():
+		child.queue_free()
+	var node_ids: Array = content.get("tables", {}).get("nodes", {}).keys()
+	node_ids.sort()
+	for node_id in node_ids:
+		var state := _node_state(str(node_id))
+		var visibility := str(state.get("visibility_state", "hidden"))
+		var button := Button.new()
+		button.text = "%s\n%s" % [state.get("display_name", node_id), visibility]
+		button.toggle_mode = true
+		button.button_pressed = str(node_id) == selected_node_id
+		button.disabled = visibility == "hidden"
+		button.custom_minimum_size = Vector2(150, 54)
+		button.pressed.connect(_on_node_pressed.bind(str(node_id)))
+		map_button_grid.add_child(button)
+
+func _on_node_pressed(node_id: String) -> void:
+	selected_node_id = node_id
+	_refresh()
+
+func _format_node_context() -> String:
+	if selected_node_id == "":
+		return "未选择节点。"
+	var state := _node_state(selected_node_id)
+	var lines := [
+		"%s [%s]" % [state.get("display_name", selected_node_id), state.get("visibility_state", "hidden")],
+		"type=%s | region=%s | zone=%s" % [state.get("node_type", ""), state.get("region_id", ""), state.get("zone_tier", "")],
+		"危险：%s" % str(state.get("danger_profile", {})),
+		"灵气：%s" % str(state.get("aura_profile", {})),
+		"控制：%s" % str(state.get("control_owner", "none")),
+		"资源：%s" % str(state.get("resource_slots", [])),
+		"",
+		"路线："
+	]
+	var routes := ContentLoader.routes_from_node(content, selected_node_id)
+	if routes.is_empty():
+		lines.append("- 无可用路线")
+	for route in routes:
+		var to_node := str(route.get("to_node", ""))
+		var to_visibility := str(_node_state(to_node).get("visibility_state", "hidden"))
+		lines.append("- %s %dh risk=%s visibility=%s" % [
+			_node_display_name(to_node),
+			int(route.get("base_travel_hours", 0)),
+			str(route.get("risk_tags", [])),
+			to_visibility
+		])
+	lines.append("")
+	lines.append("计划位置：%s" % _node_display_name(_planned_location_after_queue(_current_queue())))
 	return "\n".join(lines)
 
 func _format_logs(logs: Array) -> String:
@@ -239,8 +391,59 @@ func _format_report(report: Dictionary) -> String:
 			str(item.get("status", "")),
 			str(item.get("skip_or_interrupt_reason", ""))
 		])
+	if not report.get("interruptions", []).is_empty():
+		lines.append("")
+		lines.append("计划偏移:")
+		for item in report.get("interruptions", []):
+			lines.append("- %s 消耗 %sh effect=%s" % [
+				str(item.get("event_id", "")),
+				str(item.get("consumed_hours", "")),
+				str(item.get("effect", ""))
+			])
 	lines.append("")
 	lines.append("备注:")
 	for note in report.get("notes", []):
 		lines.append("- %s" % str(note))
 	return "\n".join(lines)
+
+func _format_action_line(action: Dictionary) -> String:
+	var target = action.get("target", {})
+	var target_id := ""
+	if typeof(target) == TYPE_DICTIONARY:
+		target_id = str(target.get("target_id", ""))
+	if target_id != "" and content.get("tables", {}).get("nodes", {}).has(target_id):
+		return "%s -> %s (%dh)" % [action.get("action_id", ""), _node_display_name(target_id), int(action.get("planned_duration_hours", 0))]
+	return PersonalActionInstruction.display_name(action)
+
+func _planned_location_after_queue(queue: Array) -> String:
+	var location := _current_or_planned_location(false)
+	for action in queue:
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		if str(action.get("action_id", "")) == "move_to_node":
+			var target = action.get("target", {})
+			if typeof(target) == TYPE_DICTIONARY:
+				location = str(target.get("target_id", location))
+	return location
+
+func _current_or_planned_location(include_queue := true) -> String:
+	var location := str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("current_location", "node_qinghe_village"))
+	if not include_queue:
+		return location
+	for action in _current_queue():
+		if typeof(action) != TYPE_DICTIONARY:
+			continue
+		if str(action.get("action_id", "")) == "move_to_node":
+			var target = action.get("target", {})
+			if typeof(target) == TYPE_DICTIONARY:
+				location = str(target.get("target_id", location))
+	return location
+
+func _node_state(node_id: String) -> Dictionary:
+	if runtime.get("node_states", {}).has(node_id):
+		return runtime["node_states"][node_id]
+	return ContentLoader.node_template(content, node_id)
+
+func _node_display_name(node_id: String) -> String:
+	var state := _node_state(node_id)
+	return str(state.get("display_name", state.get("display_name_key", node_id)))

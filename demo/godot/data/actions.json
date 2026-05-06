@@ -23,5 +23,29 @@
 		"action_kind": "personal_continuous_optional",
 		"default_duration_hours": 8,
 		"resource_input_policy": "contextual"
+	},
+	{
+		"id": "explore_node",
+		"display_name": "探索节点",
+		"phase": "B",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 24,
+		"resource_input_policy": "contextual"
+	},
+	{
+		"id": "gather_resource",
+		"display_name": "采集资源",
+		"phase": "B",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 24,
+		"resource_input_policy": "contextual"
+	},
+	{
+		"id": "active_cultivation",
+		"display_name": "主动吐纳",
+		"phase": "B",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 24,
+		"resource_input_policy": "contextual"
 	}
 ]

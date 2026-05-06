@@ -16,7 +16,7 @@ func _init() -> void:
 	if not content.get("errors", []).is_empty():
 		failures.append("Content loading errors: %s" % str(content["errors"]))
 
-	var runtime := RoomFactory.create_local_room(content.get("summary", {}))
+	var runtime := RoomFactory.create_local_room(content.get("summary", {}), content)
 	var planning_transition := TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
 	if not planning_transition["ok"]:
 		failures.append("Phase transition to planning failed: %s" % str(planning_transition))

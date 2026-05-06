@@ -37,6 +37,35 @@ static func action_template(content: Dictionary, action_id: String) -> Dictionar
 static func node_template(content: Dictionary, node_id: String) -> Dictionary:
 	return content.get("tables", {}).get("nodes", {}).get(node_id, {})
 
+static func route_template(content: Dictionary, route_id: String) -> Dictionary:
+	return content.get("tables", {}).get("routes", {}).get(route_id, {})
+
+static func event_template(content: Dictionary, event_id: String) -> Dictionary:
+	return content.get("tables", {}).get("events", {}).get(event_id, {})
+
+static func route_between(content: Dictionary, from_node: String, to_node: String) -> Dictionary:
+	for route in content.get("tables", {}).get("routes", {}).values():
+		if str(route.get("from_node", "")) == from_node and str(route.get("to_node", "")) == to_node:
+			return route
+	return {}
+
+static func routes_from_node(content: Dictionary, from_node: String) -> Array:
+	var routes := []
+	for route in content.get("tables", {}).get("routes", {}).values():
+		if str(route.get("from_node", "")) == from_node:
+			routes.append(route)
+	return routes
+
+static func node_events(content: Dictionary, trigger_scope: String, node_id: String) -> Array:
+	var events := []
+	for event in content.get("tables", {}).get("events", {}).values():
+		if str(event.get("trigger_scope", "")) != trigger_scope:
+			continue
+		if str(event.get("trigger_node_id", "")) != node_id:
+			continue
+		events.append(event)
+	return events
+
 static func _load_json_array(path: String) -> Dictionary:
 	var result := {
 		"rows": [],

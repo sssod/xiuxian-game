@@ -5,6 +5,27 @@
 		"phase": "B",
 		"trigger_scope": "movement",
 		"consumed_hours": 4,
-		"result_package_policy": "event_outputs_delta_only"
+		"result_package_policy": "event_outputs_delta_only",
+		"description": "山雨冲坏一段土路，只能绕过泥泞慢行。"
+	},
+	{
+		"id": "village_elder_rumor",
+		"display_name": "村中长者传闻",
+		"phase": "B",
+		"trigger_scope": "node_rumor",
+		"trigger_node_id": "node_qinghe_village",
+		"consumed_hours": 8,
+		"reveal_nodes": ["node_market_town", "node_yunlu_mountain_road"],
+		"rumor_text": "村中长者提到镇集有武馆，也有人见过云麓山道上的宗门巡护。"
+	},
+	{
+		"id": "market_route_rumor",
+		"display_name": "镇集消息",
+		"phase": "B",
+		"trigger_scope": "node_rumor",
+		"trigger_node_id": "node_market_town",
+		"consumed_hours": 8,
+		"reveal_nodes": ["node_training_hall", "node_yunlu_gate"],
+		"rumor_text": "镇集行商说武馆可学轻身脚程，云麓宗山门近日也在收外门杂役。"
 	}
 ]

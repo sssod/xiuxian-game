@@ -11,7 +11,14 @@ static func merge(runtime: Dictionary, packages: Array) -> Dictionary:
 		_apply_room_state_delta(runtime, package.get("state_deltas", {}).get("room_state", {}))
 		_apply_character_deltas(runtime, package.get("state_deltas", {}).get("character_states", {}))
 		_apply_node_deltas(runtime, package.get("state_deltas", {}).get("node_states", {}))
+		_apply_dictionary_deltas(runtime, "method_states", package.get("state_deltas", {}).get("method_states", {}))
+		_apply_asset_container_deltas(runtime, package.get("state_deltas", {}).get("asset_containers", {}))
+		_apply_dictionary_deltas(runtime, "item_stacks", package.get("state_deltas", {}).get("item_stacks", {}))
+		_apply_dictionary_deltas(runtime, "item_instances", package.get("state_deltas", {}).get("item_instances", {}))
+		_apply_dictionary_deltas(runtime, "active_resource_effects", package.get("state_deltas", {}).get("active_resource_effects", {}))
 		_append_state_entries(runtime, "rumor_pool", package.get("state_deltas", {}).get("rumor_pool_entries", []))
+		_append_state_entries(runtime, "asset_logs", package.get("state_deltas", {}).get("asset_log_entries", []))
+		_append_state_entries(runtime, "character_logs", package.get("state_deltas", {}).get("character_log_entries", []))
 		_clear_pending_decisions(runtime, package.get("state_deltas", {}).get("clear_pending_player_decisions", []))
 		_apply_player_lock_delta(runtime, package.get("state_deltas", {}).get("player_lock_state", {}))
 		_append_logs(runtime, "world_logs", package.get("hidden_world_logs", []))
@@ -73,6 +80,46 @@ static func _apply_node_deltas(runtime: Dictionary, node_deltas: Dictionary) -> 
 			else:
 				node_states[node_id][key] = delta[key]
 	runtime["node_states"] = node_states
+
+static func _apply_dictionary_deltas(runtime: Dictionary, state_key: String, deltas: Dictionary) -> void:
+	if deltas.is_empty():
+		return
+	if not runtime.has(state_key):
+		runtime[state_key] = {}
+	var state_dict: Dictionary = runtime[state_key]
+	for entry_id in deltas.keys():
+		if not state_dict.has(entry_id):
+			state_dict[entry_id] = {}
+		var delta = deltas[entry_id]
+		if typeof(delta) == TYPE_DICTIONARY:
+			for key in delta.keys():
+				state_dict[entry_id][key] = delta[key]
+		else:
+			state_dict[entry_id] = delta
+	runtime[state_key] = state_dict
+
+static func _apply_asset_container_deltas(runtime: Dictionary, container_deltas: Dictionary) -> void:
+	if container_deltas.is_empty():
+		return
+	if not runtime.has("asset_containers"):
+		runtime["asset_containers"] = {}
+	var containers: Dictionary = runtime["asset_containers"]
+	for container_id in container_deltas.keys():
+		if not containers.has(container_id):
+			containers[container_id] = {"container_id": container_id}
+		var delta: Dictionary = container_deltas[container_id]
+		for key in delta.keys():
+			var delta_key := str(key)
+			if delta_key.begins_with("append_"):
+				var target_key := delta_key.substr(7)
+				if not containers[container_id].has(target_key):
+					containers[container_id][target_key] = []
+				for ref_id in delta[delta_key]:
+					if not containers[container_id][target_key].has(ref_id):
+						containers[container_id][target_key].append(ref_id)
+			else:
+				containers[container_id][delta_key] = delta[key]
+	runtime["asset_containers"] = containers
 
 static func _append_state_entries(runtime: Dictionary, key: String, entries: Array) -> void:
 	if entries.is_empty():

@@ -80,7 +80,7 @@
 		"aura_profile": {"aura_level": 3, "aura_tags": ["sect_domain"]},
 		"control_owner": "sect_yunlu",
 		"resource_slots": [],
-		"route_connections": ["route_yunlu_road_to_gate"],
+		"route_connections": ["route_yunlu_road_to_gate", "route_gate_to_outer_room"],
 		"state_tags": ["sect_entry"]
 	},
 	{
@@ -94,7 +94,7 @@
 		"aura_profile": {"aura_level": 4, "aura_tags": ["cultivation_site"]},
 		"control_owner": "sect_yunlu",
 		"resource_slots": [],
-		"route_connections": [],
+		"route_connections": ["route_outer_room_to_gate", "route_outer_room_to_spirit_grass"],
 		"state_tags": ["cultivation"]
 	},
 	{
@@ -108,7 +108,7 @@
 		"aura_profile": {"aura_level": 3, "aura_tags": ["grass_spirit_qi"]},
 		"control_owner": "none",
 		"resource_slots": ["slot_spirit_grass"],
-		"route_connections": [],
+		"route_connections": ["route_spirit_grass_to_outer_room"],
 		"state_tags": ["resource"]
 	},
 	{

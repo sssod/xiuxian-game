@@ -35,17 +35,37 @@
 	{
 		"id": "gather_resource",
 		"display_name": "采集资源",
-		"phase": "B",
+		"phase": "D",
 		"action_kind": "personal_continuous_optional",
 		"default_duration_hours": 24,
 		"resource_input_policy": "contextual"
 	},
 	{
-		"id": "active_cultivation",
-		"display_name": "主动吐纳",
-		"phase": "B",
+		"id": "join_sect_event",
+		"display_name": "入门云麓宗",
+		"phase": "C",
+		"action_kind": "personal_event_chain",
+		"default_duration_hours": 12,
+		"resource_input_policy": "none",
+		"event_template_id": "sect_entry_test"
+	},
+	{
+		"id": "study_method",
+		"display_name": "研习功法",
+		"phase": "C",
 		"action_kind": "personal_continuous_optional",
 		"default_duration_hours": 24,
-		"resource_input_policy": "contextual"
+		"resource_input_policy": "contextual",
+		"required_item_template_id": "basic_dao_method_carrier"
+	},
+	{
+		"id": "active_cultivation",
+		"display_name": "主动吐纳",
+		"phase": "C",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 24,
+		"resource_input_policy": "contextual",
+		"allowed_resource_inputs": ["qingling_pill"],
+		"requires_main_dao_method": true
 	}
 ]

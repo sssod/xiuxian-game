@@ -78,5 +78,37 @@
 		"base_travel_hours": 6,
 		"risk_tags": ["sect_patrol"],
 		"unlock_conditions": []
+	},
+	{
+		"id": "route_gate_to_outer_room",
+		"from_node": "node_yunlu_gate",
+		"to_node": "node_outer_sect_room",
+		"base_travel_hours": 1,
+		"risk_tags": [],
+		"unlock_conditions": ["outer_sect_rank"]
+	},
+	{
+		"id": "route_outer_room_to_gate",
+		"from_node": "node_outer_sect_room",
+		"to_node": "node_yunlu_gate",
+		"base_travel_hours": 1,
+		"risk_tags": [],
+		"unlock_conditions": []
+	},
+	{
+		"id": "route_outer_room_to_spirit_grass",
+		"from_node": "node_outer_sect_room",
+		"to_node": "node_spirit_grass_slope",
+		"base_travel_hours": 6,
+		"risk_tags": ["minor_delay", "resource_competition"],
+		"unlock_conditions": ["outer_sect_rank"]
+	},
+	{
+		"id": "route_spirit_grass_to_outer_room",
+		"from_node": "node_spirit_grass_slope",
+		"to_node": "node_outer_sect_room",
+		"base_travel_hours": 6,
+		"risk_tags": ["resource_competition"],
+		"unlock_conditions": []
 	}
 ]

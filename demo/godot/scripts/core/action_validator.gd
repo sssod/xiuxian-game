@@ -37,9 +37,21 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 		if actor_id != "" and not simulated_locations.has(actor_id):
 			simulated_locations[actor_id] = _actor_current_location(runtime, actor_id)
 
-		var resource_bindings = action.get("resource_bindings", [])
+		var resource_bindings = _resource_bindings(action)
 		if typeof(resource_bindings) != TYPE_ARRAY:
 			errors.append("%s resource_bindings must be an array." % action_id)
+		else:
+			var used_channels := []
+			for binding in resource_bindings:
+				if typeof(binding) != TYPE_DICTIONARY:
+					errors.append("%s contains invalid ActionResourceInputBinding." % action_id)
+					continue
+				var effect_channel := str(binding.get("effect_channel", ""))
+				if effect_channel != "" and used_channels.has(effect_channel):
+					errors.append("%s uses more than one resource input for effect_channel=%s." % [action_id, effect_channel])
+				used_channels.append(effect_channel)
+				if not _resource_binding_is_available(runtime, content, actor_id, action_id, binding):
+					errors.append("%s resource input is unavailable or invalid: %s." % [action_id, str(binding.get("resource_ref", ""))])
 
 		var target = action.get("target", {})
 		if typeof(target) != TYPE_DICTIONARY:
@@ -64,13 +76,19 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 				if duration < required_hours:
 					errors.append("move_to_node planned_duration_hours must cover route time: %dh required." % required_hours)
 				simulated_locations[actor_id] = target_node
-		elif action_id in ["ask_for_rumor", "explore_node", "gather_resource", "active_cultivation"]:
+		elif action_id in ["ask_for_rumor", "explore_node", "gather_resource", "active_cultivation", "study_method", "join_sect_event"]:
 			var action_node := ""
 			if typeof(target) == TYPE_DICTIONARY:
 				action_node = str(target.get("target_id", ""))
 			var expected_node := str(simulated_locations.get(actor_id, ""))
 			if action_node != "" and expected_node != "" and action_node != expected_node:
 				errors.append("%s target must match planned location %s, got %s." % [action_id, expected_node, action_node])
+			if action_id == "join_sect_event" and action_node != "node_yunlu_gate":
+				errors.append("join_sect_event must target node_yunlu_gate.")
+			if action_id == "study_method" and not _has_method_carrier(runtime, actor_id, "basic_dao_method_carrier"):
+				errors.append("study_method requires a complete MethodCarrierItem in character inventory.")
+			if action_id == "active_cultivation" and not _has_main_dao_method(runtime, actor_id):
+				errors.append("active_cultivation requires an existing MethodState set as main_dao_method_ref.")
 
 	if planned_hours > budget_hours:
 		errors.append("Action budget exceeded: %dh planned / %dh available." % [planned_hours, budget_hours])
@@ -90,3 +108,47 @@ static func _node_visibility(runtime: Dictionary, content: Dictionary, node_id: 
 	if runtime.get("node_states", {}).has(node_id):
 		return str(runtime["node_states"][node_id].get("visibility_state", "hidden"))
 	return str(ContentLoader.node_template(content, node_id).get("visibility_state", "hidden"))
+
+static func _resource_bindings(action: Dictionary) -> Array:
+	if action.has("resource_bindings"):
+		return action.get("resource_bindings", [])
+	return action.get("resource_inputs", [])
+
+static func _resource_binding_is_available(runtime: Dictionary, content: Dictionary, actor_id: String, action_id: String, binding: Dictionary) -> bool:
+	var resource_ref := str(binding.get("resource_ref", ""))
+	if resource_ref == "":
+		return false
+	var template := ContentLoader.item_template(content, resource_ref)
+	if template.is_empty():
+		return false
+	if not template.get("allowed_action_ids", [action_id]).has(action_id):
+		return false
+	var source_container_ref: Dictionary = binding.get("source_container_ref", {})
+	var source_container_id := str(source_container_ref.get("container_id", _inventory_container_id(runtime, actor_id)))
+	return _container_has_stack(runtime, source_container_id, resource_ref, 1)
+
+static func _has_method_carrier(runtime: Dictionary, actor_id: String, item_template_id: String) -> bool:
+	var container_id := _inventory_container_id(runtime, actor_id)
+	for item_id in runtime.get("asset_containers", {}).get(container_id, {}).get("item_instance_refs", []):
+		var instance: Dictionary = runtime.get("item_instances", {}).get(str(item_id), {})
+		if str(instance.get("item_template_id", "")) == item_template_id:
+			return true
+	return false
+
+static func _has_main_dao_method(runtime: Dictionary, actor_id: String) -> bool:
+	var character: Dictionary = runtime.get("incarnations", {}).get(actor_id, {})
+	var main_method_ref := str(character.get("cultivation", {}).get("main_dao_method_ref", ""))
+	return main_method_ref != "" and runtime.get("method_states", {}).has(main_method_ref)
+
+static func _inventory_container_id(runtime: Dictionary, actor_id: String) -> String:
+	return str(runtime.get("incarnations", {}).get(actor_id, {}).get("inventory_container_ref", {}).get("container_id", ""))
+
+static func _container_has_stack(runtime: Dictionary, container_id: String, item_template_id: String, amount: int) -> bool:
+	if container_id == "":
+		return false
+	var container: Dictionary = runtime.get("asset_containers", {}).get(container_id, {})
+	for stack_id in container.get("item_stack_refs", []):
+		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
+		if str(stack.get("item_template_id", "")) == item_template_id and int(stack.get("amount", 0)) >= amount:
+			return true
+	return false

@@ -43,6 +43,12 @@ static func route_template(content: Dictionary, route_id: String) -> Dictionary:
 static func event_template(content: Dictionary, event_id: String) -> Dictionary:
 	return content.get("tables", {}).get("events", {}).get(event_id, {})
 
+static func item_template(content: Dictionary, item_template_id: String) -> Dictionary:
+	return content.get("tables", {}).get("items", {}).get(item_template_id, {})
+
+static func sect_template(content: Dictionary, sect_id: String) -> Dictionary:
+	return content.get("tables", {}).get("sects", {}).get(sect_id, {})
+
 static func route_between(content: Dictionary, from_node: String, to_node: String) -> Dictionary:
 	for route in content.get("tables", {}).get("routes", {}).values():
 		if str(route.get("from_node", "")) == from_node and str(route.get("to_node", "")) == to_node:

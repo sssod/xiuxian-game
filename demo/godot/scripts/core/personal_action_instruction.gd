@@ -51,6 +51,41 @@ static func make_node_action(action_id: String, actor_id := DemoConstants.LOCAL_
 		"status": "draft"
 	}
 
+static func make_join_sect_event(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "node_yunlu_gate", planned_duration_hours := 12) -> Dictionary:
+	return make_node_action("join_sect_event", actor_id, sequence, node_id, planned_duration_hours)
+
+static func make_study_method(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "", planned_duration_hours := 24) -> Dictionary:
+	return make_node_action("study_method", actor_id, sequence, node_id, planned_duration_hours)
+
+static func make_active_cultivation(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "", planned_duration_hours := 24, use_qingling_pill := false) -> Dictionary:
+	var instruction := make_node_action("active_cultivation", actor_id, sequence, node_id, planned_duration_hours)
+	if use_qingling_pill:
+		var binding := make_qingling_pill_binding(instruction["instruction_id"], actor_id, planned_duration_hours)
+		instruction["resource_bindings"] = [binding]
+		instruction["resource_inputs"] = [binding]
+	return instruction
+
+static func make_qingling_pill_binding(instruction_id: String, actor_id := DemoConstants.LOCAL_CHARACTER_ID, planned_use_hours := 24) -> Dictionary:
+	return {
+		"binding_id": "binding_qingling_%s" % instruction_id,
+		"instruction_id": instruction_id,
+		"actor_ref": actor_id,
+		"resource_ref": "qingling_pill",
+		"resource_effect_template_id": "qingling_pill_effect_cultivation",
+		"source_container_ref": {
+			"container_type": "CharacterInventory",
+			"container_id": "container_character_local_inventory"
+		},
+		"effect_channel": "cultivation_aura",
+		"timing_mode": "compatible_action_hours",
+		"max_effective_hours": 120,
+		"planned_use_hours": planned_use_hours,
+		"consume_on_action_start": true,
+		"residual_policy": "stable_suspend",
+		"stack_group": "cultivation_main_resource",
+		"created_turn_id": 0
+	}
+
 static func display_name(action: Dictionary) -> String:
 	var target = action.get("target", {})
 	var target_id := ""

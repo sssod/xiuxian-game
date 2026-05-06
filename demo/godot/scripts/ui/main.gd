@@ -19,12 +19,17 @@ var queue_text: RichTextLabel
 var report_text: RichTextLabel
 var visible_log_text: RichTextLabel
 var debug_log_text: RichTextLabel
+var character_text: RichTextLabel
 var content_label: Label
 var budget_label: Label
 var map_button_grid: GridContainer
 var node_context_text: RichTextLabel
 var add_move_button: Button
 var add_rumor_button: Button
+var join_sect_button: Button
+var study_method_button: Button
+var cultivation_button: Button
+var cultivation_with_pill_button: Button
 var selected_node_id := ""
 
 func _ready() -> void:
@@ -63,6 +68,26 @@ func _build_ui() -> void:
 	add_rumor_button.text = "打听当前位置"
 	add_rumor_button.pressed.connect(_on_add_rumor_pressed)
 	toolbar.add_child(add_rumor_button)
+
+	join_sect_button = Button.new()
+	join_sect_button.text = "入门云麓宗"
+	join_sect_button.pressed.connect(_on_add_join_sect_pressed)
+	toolbar.add_child(join_sect_button)
+
+	study_method_button = Button.new()
+	study_method_button.text = "研习功法"
+	study_method_button.pressed.connect(_on_add_study_method_pressed)
+	toolbar.add_child(study_method_button)
+
+	cultivation_button = Button.new()
+	cultivation_button.text = "吐纳 1 天"
+	cultivation_button.pressed.connect(_on_add_cultivation_pressed.bind(false))
+	toolbar.add_child(cultivation_button)
+
+	cultivation_with_pill_button = Button.new()
+	cultivation_with_pill_button.text = "吐纳 + 清灵丹"
+	cultivation_with_pill_button.pressed.connect(_on_add_cultivation_pressed.bind(true))
+	toolbar.add_child(cultivation_with_pill_button)
 
 	var clear_button := Button.new()
 	clear_button.text = "清空预案"
@@ -132,6 +157,7 @@ func _build_ui() -> void:
 
 	visible_log_text = _make_panel(columns, "玩家可见日志")
 	queue_text = _make_panel(columns, "当前行动预案")
+	character_text = _make_panel(columns, "角色 / 功法 / 背包")
 	report_text = _make_panel(columns, "回合报告")
 	debug_log_text = _make_panel(columns, "Debug")
 
@@ -198,6 +224,38 @@ func _on_add_rumor_pressed() -> void:
 	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
 	_refresh()
 
+func _on_add_join_sect_pressed() -> void:
+	var queue := _current_queue()
+	var template := ContentLoader.action_template(content, "join_sect_event")
+	var duration := int(template.get("default_duration_hours", 12))
+	queue.append(PersonalActionInstruction.make_join_sect_event(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, "node_yunlu_gate", duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = "node_yunlu_gate"
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_study_method_pressed() -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var template := ContentLoader.action_template(content, "study_method")
+	var duration := int(template.get("default_duration_hours", 24))
+	queue.append(PersonalActionInstruction.make_study_method(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_cultivation_pressed(use_qingling_pill: bool) -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var template := ContentLoader.action_template(content, "active_cultivation")
+	var duration := int(template.get("default_duration_hours", 24))
+	queue.append(PersonalActionInstruction.make_active_cultivation(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration, use_qingling_pill))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
 func _on_clear_actions_pressed() -> void:
 	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = []
 	_refresh()
@@ -236,7 +294,7 @@ func _on_load_pressed() -> void:
 	var result := SaveManager.load_game()
 	if result["ok"]:
 		runtime = result["runtime"]
-		RoomFactory.ensure_phase_b_runtime_state(runtime, content)
+		RoomFactory.ensure_phase_c_runtime_state(runtime, content)
 		selected_node_id = _current_or_planned_location()
 		validation_label.text = "读取：%s" % result["path"]
 	else:
@@ -246,7 +304,7 @@ func _on_load_pressed() -> void:
 func _refresh() -> void:
 	if runtime.is_empty():
 		return
-	RoomFactory.ensure_phase_b_runtime_state(runtime, content)
+	RoomFactory.ensure_phase_c_runtime_state(runtime, content)
 	if selected_node_id == "":
 		selected_node_id = _current_or_planned_location()
 	var room: Dictionary = runtime["room_state"]
@@ -271,7 +329,12 @@ func _refresh() -> void:
 	_render_map()
 	node_context_text.text = _format_node_context()
 	add_move_button.disabled = selected_node_id == "" or selected_node_id == _planned_location_after_queue(_current_queue()) or ContentLoader.route_between(content, _planned_location_after_queue(_current_queue()), selected_node_id).is_empty()
+	join_sect_button.disabled = _planned_location_after_queue(_current_queue()) != "node_yunlu_gate" or _character_rank() != "none"
+	study_method_button.disabled = not _has_item_instance("basic_dao_method_carrier")
+	cultivation_button.disabled = not _has_main_method()
+	cultivation_with_pill_button.disabled = not _has_main_method() or not _has_item_stack("qingling_pill")
 	queue_text.text = _format_queue()
+	character_text.text = _format_character_panel()
 	visible_log_text.text = _format_logs(runtime.get("visible_logs", []))
 	debug_log_text.text = _format_logs(runtime.get("debug_logs", []))
 	report_text.text = _format_report(runtime.get("last_report", {}))
@@ -356,6 +419,68 @@ func _format_node_context() -> String:
 	lines.append("计划位置：%s" % _node_display_name(_planned_location_after_queue(_current_queue())))
 	return "\n".join(lines)
 
+func _format_character_panel() -> String:
+	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
+	var cultivation: Dictionary = character.get("cultivation", {})
+	var aptitude: Dictionary = character.get("aptitude_profile", {})
+	var bars: Dictionary = character.get("derived_bars", {})
+	var lines := [
+		"%s | 位置：%s" % [character.get("current_name", ""), _node_display_name(str(character.get("current_location", "")))],
+		"身份：%s / %s" % [str(character.get("sect_identity", {}).get("sect_id", "none")), str(character.get("sect_identity", {}).get("rank", "none"))],
+		"境界：%s | 修为 %.1f | 瓶颈：%s" % [str(cultivation.get("current_stage_code", "")), float(cultivation.get("cultivation_progress", 0.0)), str(cultivation.get("bottleneck_state", ""))],
+		"主修：%s" % str(cultivation.get("main_dao_method_ref", "")),
+		"体魄 %s / 精力 %s | 生机 %.0f/%.0f 元气 %.0f/%.0f 神念 %.0f/%.0f" % [
+			str(character.get("base_attributes", {}).get("base_physique", "")),
+			str(character.get("base_attributes", {}).get("base_vigor", "")),
+			float(bars.get("bar_vitality_current", 0.0)),
+			float(bars.get("bar_vitality_max", 0.0)),
+			float(bars.get("bar_qi_current", 0.0)),
+			float(bars.get("bar_qi_max", 0.0)),
+			float(bars.get("bar_mind_current", 0.0)),
+			float(bars.get("bar_mind_max", 0.0))
+		],
+		"资质：根骨 %s / 悟性 %s / 灵根 %s | %s" % [
+			str(aptitude.get("aptitude_bone", "?")),
+			str(aptitude.get("aptitude_comprehension", "?")),
+			str(aptitude.get("aptitude_root", "?")),
+			str(aptitude.get("aptitude_rating_visibility", "hidden"))
+		],
+		"",
+		"MethodState:"
+	]
+	if runtime.get("method_states", {}).is_empty():
+		lines.append("- 无")
+	for method_state in runtime.get("method_states", {}).values():
+		lines.append("- %s mastery=%s cap=%s exp=%.1f" % [
+			str(method_state.get("template_id", "")),
+			str(method_state.get("mastery_level", "")),
+			str(method_state.get("current_effective_cap_stage", "")),
+			float(method_state.get("mastery_exp", 0.0))
+		])
+	lines.append("")
+	lines.append("背包:")
+	var inventory := _inventory_container()
+	for stack_id in inventory.get("item_stack_refs", []):
+		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
+		lines.append("- %s x%s" % [str(stack.get("item_template_id", stack_id)), str(stack.get("amount", ""))])
+	for item_id in inventory.get("item_instance_refs", []):
+		var instance: Dictionary = runtime.get("item_instances", {}).get(str(item_id), {})
+		lines.append("- %s" % str(instance.get("item_template_id", item_id)))
+	if inventory.get("item_stack_refs", []).is_empty() and inventory.get("item_instance_refs", []).is_empty():
+		lines.append("- 空")
+	lines.append("")
+	lines.append("ActiveResourceEffect:")
+	for effect_id in character.get("active_resource_effect_refs", []):
+		var effect: Dictionary = runtime.get("active_resource_effects", {}).get(str(effect_id), {})
+		lines.append("- %s remaining=%.1fh channel=%s" % [
+			str(effect.get("source_resource_ref", effect_id)),
+			float(effect.get("remaining_effect_hours", 0.0)),
+			str(effect.get("effect_channel", ""))
+		])
+	if character.get("active_resource_effect_refs", []).is_empty():
+		lines.append("- 无")
+	return "\n".join(lines)
+
 func _format_logs(logs: Array) -> String:
 	var lines := []
 	for entry in logs:
@@ -385,11 +510,19 @@ func _format_report(report: Dictionary) -> String:
 	lines.append("")
 	lines.append("实际执行:")
 	for item in report.get("actual_actions", []):
-		lines.append("- %s %sh status=%s reason=%s" % [
+		var extra := ""
+		if item.has("cultivation_progress_delta"):
+			extra = " gain=%.1f stage=%s" % [float(item.get("cultivation_progress_delta", 0.0)), str(item.get("stage_after", ""))]
+		if item.has("resource_bonus") and int(item.get("resource_bonus", {}).get("residual_effect_hours", 0)) > 0:
+			extra += " residual=%sh" % str(item.get("resource_bonus", {}).get("residual_effect_hours", 0))
+		if item.has("method_state_id"):
+			extra += " method=%s" % str(item.get("method_state_id", ""))
+		lines.append("- %s %sh status=%s reason=%s%s" % [
 			str(item.get("action_id", "")),
 			str(item.get("actual_consumed_hours", "")),
 			str(item.get("status", "")),
-			str(item.get("skip_or_interrupt_reason", ""))
+			str(item.get("skip_or_interrupt_reason", "")),
+			extra
 		])
 	if not report.get("interruptions", []).is_empty():
 		lines.append("")
@@ -447,3 +580,30 @@ func _node_state(node_id: String) -> Dictionary:
 func _node_display_name(node_id: String) -> String:
 	var state := _node_state(node_id)
 	return str(state.get("display_name", state.get("display_name_key", node_id)))
+
+func _character_rank() -> String:
+	return str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("rank", "none"))
+
+func _has_main_method() -> bool:
+	var main_method_ref := str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("cultivation", {}).get("main_dao_method_ref", ""))
+	return main_method_ref != "" and runtime.get("method_states", {}).has(main_method_ref)
+
+func _inventory_container() -> Dictionary:
+	var container_id := str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("inventory_container_ref", {}).get("container_id", ""))
+	return runtime.get("asset_containers", {}).get(container_id, {})
+
+func _has_item_stack(item_template_id: String) -> bool:
+	var inventory := _inventory_container()
+	for stack_id in inventory.get("item_stack_refs", []):
+		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
+		if str(stack.get("item_template_id", "")) == item_template_id and int(stack.get("amount", 0)) > 0:
+			return true
+	return false
+
+func _has_item_instance(item_template_id: String) -> bool:
+	var inventory := _inventory_container()
+	for item_id in inventory.get("item_instance_refs", []):
+		var instance: Dictionary = runtime.get("item_instances", {}).get(str(item_id), {})
+		if str(instance.get("item_template_id", "")) == item_template_id:
+			return true
+	return false

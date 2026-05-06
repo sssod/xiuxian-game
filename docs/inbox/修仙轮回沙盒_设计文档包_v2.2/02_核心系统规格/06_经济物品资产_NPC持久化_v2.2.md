@@ -1,4 +1,4 @@
-# 经济、物品、资产容器与 NPC 持久化（v2.1）
+# 经济、物品、资产容器与 NPC 持久化（v2.2）
 
 ## 0. 文档定位
 
@@ -63,7 +63,9 @@ MVP 不需要所有资源都是具体物品实例。
 - 宗门大宗资源先用抽象库存数值。
 - 节点自然产能先作为 ResourcePool / ResourceSlot。
 - 普通材料、丹药、符箓可作为可堆叠物品。
-- 法宝、功法载体、正式后手物、高价值突破资源、带独立状态的物品作为实例物品。
+- 法宝、高价值完整道功载体、正式后手物、高价值突破资源、带独立状态的物品作为实例物品。
+- 残页 / 篇章等功法组件作为 `MethodComponentItem`，只用于合成、线索、权限或内容投放，不生成学习进度。
+- 完整功法载体作为 `MethodCarrierItem`，学习后才生成角色的 `MethodState`。
 - 当抽象资源进入战斗、交易、突破、封存、奖励、遗产等具体语境时，再转换为物品栈或实例。
 
 ---
@@ -205,6 +207,9 @@ ResourceUseRequest {
   resource_or_item_ref: String,
   amount: int,
   use_context: String,      # cultivation / breakthrough / combat / building / event / sect_ai
+  action_instruction_ref: String,
+  resource_effect_template_id: String,
+  effect_channel: String,
   target_ref: String,
   turn_id: int,
   world_hour: int
@@ -217,11 +222,14 @@ ResourceUseRequest {
 ResourceUseResult {
   accepted: bool,
   consumed_assets: Array,
+  active_resource_effect_refs: Array,
   failed_reason: String,
   inventory_delta: Dictionary,
   log_entries: Array
 }
 ```
+
+行动资源输入消耗必须使用统一接口。服务端在行动开始前校验资源是否存在、容器是否可调用、资源是否允许用于当前行动或事件选项、位置 / 状态 / 标签是否满足、同类资源是否冲突。行动未实际开始时不消耗资源。
 
 宗门资源预留：
 
@@ -255,6 +263,8 @@ MVP 支持轻量配方制生产，不做完整炼丹炼器大系统。
 - 配方作为非战斗类功法 / 技艺的衍生物进入规则。
 - 配方可由 NPC 传授或物品学习获得。
 - MVP 支持配方经验与少量等级效果。
+- 功法残页 / 篇章合成为完整功法载体属于配方制生产的例外类型：它产出的不是普通消耗品，而是 `MethodCarrierItem`。
+- 合成完整功法载体可以有耗时和设施 / 导师 / 权限要求，但残页 / 篇章本身不进入 `MethodState`。
 
 生产行动时间：
 

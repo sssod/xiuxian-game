@@ -46,38 +46,38 @@ The player controls a cross-life true-spirit identity, not a sect, nation, or fi
 
 ## Current Source Of Truth
 
-Use the v2.1 document package in `docs/inbox` as the current local source of truth:
+Use the v2.2 document package in `docs/inbox` as the current local source of truth:
 
 ```text
-docs/inbox/修仙轮回沙盒_设计文档包_v2.1/
+docs/inbox/修仙轮回沙盒_设计文档包_v2.2/
 ```
 
 Start with:
 
 1. `README.md`
-2. `01_基础与总览/01_项目总览_MVP边界_系统依赖_v2.1.md`
-3. `01_基础与总览/03_术语表_命名规范_字段统一_v2.1.md`
-4. `03_实现交付/02_MVP开发切片与验收清单_v2.1.md`
-5. `04_UIUX与效果图/01_UIUX需求方案_v2.1.md`
-6. `04_UIUX与效果图/02_UI效果图生成Prompt速查_v2.1.md`
+2. `01_基础与总览/01_项目总览_MVP边界_系统依赖_v2.2.md`
+3. `01_基础与总览/03_术语表_命名规范_字段统一_v2.2.md`
+4. `03_实现交付/02_MVP开发切片与验收清单_v2.2.md`
+5. `04_UIUX与效果图/01_UIUX需求方案_v2.2.md`
+6. `04_UIUX与效果图/02_UI效果图生成Prompt速查_v2.2.md`
 
-During high-frequency Figma UI iteration, do not maintain per-iteration "精修规格" document series unless explicitly requested. Use the current Figma artifact for node-level layout and component placement, and record only stable UI decisions in the v2.1 UI/UX documents.
+During high-frequency Figma UI iteration, do not maintain per-iteration "精修规格" document series unless explicitly requested. Use the current Figma artifact for node-level layout and component placement, and record only stable UI decisions in the v2.2 UI/UX documents.
 
 When documents conflict, prefer this order:
 
 ```text
 AGENTS.md
 -> current Figma UI artifact, for node-level main UI layout / component placement
--> v2.1 UI/UX requirement document, for stable UI decisions
--> v2.1 terminology / field-unification document
--> v2.1 room turn / action economy / sect AI documents
--> v2.1 runtime state / migration table
--> other v2.1 system documents
+-> v2.2 UI/UX requirement document, for stable UI decisions
+-> v2.2 terminology / field-unification document
+-> v2.2 room turn / action economy / sect AI documents
+-> v2.2 runtime state / migration table
+-> other v2.2 system documents
 -> older Notion or imported historical documents
 -> CLAUDE.md compatibility notes
 ```
 
-Before changing product, design, UI, data, or implementation-facing docs, read the package `README.md` and the relevant v2.1 document for the subsystem being touched.
+Before changing product, design, UI, data, or implementation-facing docs, read the package `README.md` and the relevant v2.2 document for the subsystem being touched.
 
 ## Current Design Contract
 
@@ -92,6 +92,9 @@ Before changing product, design, UI, data, or implementation-facing docs, read t
 - MVP removes player sect instant commands, sect main-action suggestions, sect proposals, and sect decision phases.
 - Each sect may have at most one active `SectContinuousActionState` at the same time, maintained by sect AI.
 - Multiplayer competition is mainly indirect through sects, nodes, resources, rumors, visibility, and opportunity windows.
+- Learned methods come from complete method carriers; fragments / chapters are assets for synthesis, clues, permissions, or content delivery, not runtime learning progress.
+- Dan pills, spiritual materials, talismans, and temporary boost resources enter settlement as action resource inputs such as `ActionResourceInputBinding`, not as a default standalone "丹药炼化" action.
+- Unused consumed resource effects are represented by `ActiveResourceEffect` and can persist across turns according to residual policy.
 
 ## External Resource Index
 
@@ -101,11 +104,13 @@ Resource check dates are recorded per section.
 
 Checked on 2026-05-01.
 
-Current v2.1 package entry:
+Latest checked Notion package entry:
 
 - `修仙轮回沙盒_设计文档包_v2.1`
 - https://app.notion.com/p/352dffce59dc81659844f34177712f05
 - Contains mounted entries for `01_基础与总览`, `02_核心系统规格`, `03_实现交付`, `04_UIUX与效果图`, `README`, `MANIFEST`, and `QA_自动检查报告`.
+
+Note: the current local source of truth is v2.2. The Notion package above was last checked as v2.1 and was not re-imported during the 2026-05-06 local merge.
 
 Zip import / page mapping record:
 
@@ -118,7 +123,7 @@ Historical references:
 - `修仙轮回沙盒｜项目总览与顶层设计定案 0424`: https://app.notion.com/p/0c9dffce59dc83d49a4c8147a47b6b36
 - `修仙轮回沙盒_UIUX需求最终方案_v1.1`: https://app.notion.com/p/351dffce59dc8062802cd14ff328e743
 
-Treat historical Notion pages as traceability only when v2.1 is silent.
+Treat historical Notion pages as traceability only when v2.2 is silent.
 
 ### Figma
 
@@ -161,19 +166,19 @@ xiuxian-game/
   docs/
     inbox/
       README.md
-      修仙轮回沙盒_设计文档包_v2.1/
+      修仙轮回沙盒_设计文档包_v2.2/
 ```
 
 The repo is currently documentation-first. Do not invent engine, backend, database, or deployment implementation details beyond the current documents.
 
 ## Working Conventions
 
-- Keep edits scoped to the user request and the current v2.1 design package.
+- Keep edits scoped to the user request and the current v2.2 design package.
 - Preserve the existing document language. Current project design documents are primarily Chinese.
 - Preserve Chinese project terminology in design docs unless a specific file clearly uses English.
-- Prefer v2.1 field names such as `turn_id`, `world_day`, `world_hour`, `hour_tick`, `macro_period_id`, `TurnReplay`, and `SectContinuousActionState`.
+- Prefer v2.2 field names such as `turn_id`, `world_day`, `world_hour`, `hour_tick`, `macro_period_id`, `TurnReplay`, `SectContinuousActionState`, `ActionResourceInputBinding`, and `ActiveResourceEffect`.
 - Avoid reintroducing old terms as active implementation concepts: `quarter`, `action_slot`, `current_quarter`, `QuarterReplay`, `SectDecisionIntent`, sect main-action input, or six lunar action slots.
-- Keep design changes traceable to the v2.1 package or explicitly mark them as new decisions.
+- Keep design changes traceable to the v2.2 package or explicitly mark them as new decisions.
 - If moving files out of `docs/inbox`, preserve source provenance and update this governance file.
 - When updating governance, keep resource links, checked dates, and source precedence current.
 - If Notion or Figma resources move, update the External Resource Index with the new URL, title, and checked date.

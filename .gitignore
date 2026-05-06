@@ -23,6 +23,7 @@ captures/
 demo/godot/.godot/
 demo/godot/runtime/
 demo/godot/export_presets.cfg
+*.gd.uid
 
 # Local secrets should never be committed
 .env

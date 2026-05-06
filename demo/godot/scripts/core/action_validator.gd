@@ -11,9 +11,6 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 	var budget_hours := DemoConstants.turn_total_hours(turn_config)
 	var simulated_locations := {}
 
-	if action_queue.size() > 3:
-		errors.append("Phase B demo supports up to 3 planned personal actions per turn.")
-
 	for index in action_queue.size():
 		var action = action_queue[index]
 		if typeof(action) != TYPE_DICTIONARY:
@@ -68,13 +65,13 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 			if typeof(target) == TYPE_DICTIONARY:
 				target_node = str(target.get("target_id", ""))
 			var from_node := str(simulated_locations.get(actor_id, ""))
-			var route := ContentLoader.route_between(content, from_node, target_node)
+			var route := ContentLoader.route_path_between(content, from_node, target_node, _visible_node_ids(runtime, content))
 			if route.is_empty():
-				errors.append("No route from %s to %s for move_to_node." % [from_node, target_node])
+				errors.append("No visible route path from %s to %s for move_to_node." % [from_node, target_node])
 			else:
 				var required_hours := int(route.get("base_travel_hours", 0))
 				if duration < required_hours:
-					errors.append("move_to_node planned_duration_hours must cover route time: %dh required." % required_hours)
+					errors.append("move_to_node planned_duration_hours must cover route path time: %dh required." % required_hours)
 				simulated_locations[actor_id] = target_node
 		elif action_id in ["ask_for_rumor", "explore_node", "gather_resource", "active_cultivation", "study_method", "join_sect_event", "prepare_breakthrough", "attempt_breakthrough"]:
 			var action_node := ""
@@ -143,6 +140,13 @@ static func _node_visibility(runtime: Dictionary, content: Dictionary, node_id: 
 	if runtime.get("node_states", {}).has(node_id):
 		return str(runtime["node_states"][node_id].get("visibility_state", "hidden"))
 	return str(ContentLoader.node_template(content, node_id).get("visibility_state", "hidden"))
+
+static func _visible_node_ids(runtime: Dictionary, content: Dictionary) -> Array:
+	var node_ids := []
+	for node_id in content.get("tables", {}).get("nodes", {}).keys():
+		if _node_visibility(runtime, content, str(node_id)) != "hidden":
+			node_ids.append(str(node_id))
+	return node_ids
 
 static func _resource_bindings(action: Dictionary) -> Array:
 	if action.has("resource_bindings"):

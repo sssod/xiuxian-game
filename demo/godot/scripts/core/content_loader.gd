@@ -66,6 +66,62 @@ static func route_between(content: Dictionary, from_node: String, to_node: Strin
 			return route
 	return {}
 
+static func route_path_between(content: Dictionary, from_node: String, to_node: String, allowed_node_ids := []) -> Dictionary:
+	if from_node == "" or to_node == "" or from_node == to_node:
+		return {}
+
+	var allowed_lookup := {}
+	for node_id in allowed_node_ids:
+		allowed_lookup[str(node_id)] = true
+
+	var queue := [{
+		"node_id": from_node,
+		"route_path": [],
+		"base_travel_hours": 0,
+		"risk_tags": []
+	}]
+	var visited := {from_node: true}
+
+	while not queue.is_empty():
+		var current: Dictionary = queue.pop_front()
+		var current_node := str(current.get("node_id", ""))
+		for route in routes_from_node(content, current_node):
+			var next_node := str(route.get("to_node", ""))
+			if next_node == "":
+				continue
+			if not allowed_lookup.is_empty() and not allowed_lookup.has(next_node):
+				continue
+			if visited.has(next_node):
+				continue
+
+			var next_path: Array = current.get("route_path", []).duplicate(true)
+			next_path.append(_route_path_step(route))
+			var next_hours := int(current.get("base_travel_hours", 0)) + int(route.get("base_travel_hours", 0))
+			var next_risk_tags: Array = current.get("risk_tags", []).duplicate(true)
+			for risk_tag in route.get("risk_tags", []):
+				if not next_risk_tags.has(risk_tag):
+					next_risk_tags.append(risk_tag)
+
+			if next_node == to_node:
+				return {
+					"id": "path_%s_to_%s" % [from_node, to_node],
+					"from_node": from_node,
+					"to_node": to_node,
+					"base_travel_hours": next_hours,
+					"risk_tags": next_risk_tags,
+					"route_path": next_path
+				}
+
+			visited[next_node] = true
+			queue.append({
+				"node_id": next_node,
+				"route_path": next_path,
+				"base_travel_hours": next_hours,
+				"risk_tags": next_risk_tags
+			})
+
+	return {}
+
 static func routes_from_node(content: Dictionary, from_node: String) -> Array:
 	var routes := []
 	for route in content.get("tables", {}).get("routes", {}).values():
@@ -115,3 +171,12 @@ static func _index_by_id(rows: Array) -> Dictionary:
 			continue
 		indexed[stable_id] = row
 	return indexed
+
+static func _route_path_step(route: Dictionary) -> Dictionary:
+	return {
+		"route_id": str(route.get("id", "")),
+		"from_node": str(route.get("from_node", "")),
+		"to_node": str(route.get("to_node", "")),
+		"base_travel_hours": int(route.get("base_travel_hours", 0)),
+		"risk_tags": route.get("risk_tags", [])
+	}

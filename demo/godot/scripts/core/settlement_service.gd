@@ -275,7 +275,7 @@ static func _settle_move_action(runtime: Dictionary, content: Dictionary, action
 	var actor_id := str(action.get("actor_id", ""))
 	var from_node := _current_location_for_actor(runtime, character_deltas, actor_id)
 	var target_node := _target_node(action)
-	var route := ContentLoader.route_between(content, from_node, target_node)
+	var route := _movement_route_for_action(content, action, from_node, target_node)
 	var travel_hours := int(route.get("base_travel_hours", action.get("planned_duration_hours", 0)))
 	var consumed_hours = min(travel_hours, remaining_hours)
 	var actual_entries := []
@@ -297,7 +297,7 @@ static func _settle_move_action(runtime: Dictionary, content: Dictionary, action
 	_set_character_delta(character_deltas, actor_id, {"current_location": target_node})
 	_set_node_delta(node_deltas, target_node, {"visibility_state": "known"})
 	actual_entries.append(_actual_entry(action, travel_hours, consumed_hours, "completed", "", cursor_world_hour, cursor_world_hour + consumed_hours))
-	visible_logs.append(LogUtils.visible("movement_completed", "从%s抵达%s，路线耗时%d小时。" % [_node_name(runtime, content, from_node), _node_name(runtime, content, target_node), consumed_hours], turn_id, world_day, cursor_world_hour + consumed_hours))
+	visible_logs.append(LogUtils.visible("movement_completed", "从%s抵达%s，路线耗时%d小时%s。" % [_node_name(runtime, content, from_node), _node_name(runtime, content, target_node), consumed_hours, _route_path_suffix(runtime, content, route)], turn_id, world_day, cursor_world_hour + consumed_hours))
 
 	var new_remaining: int = remaining_hours - int(consumed_hours)
 	var new_cursor: int = cursor_world_hour + int(consumed_hours)
@@ -1489,6 +1489,48 @@ static func _target_node(action: Dictionary) -> String:
 	if typeof(target) != TYPE_DICTIONARY:
 		return ""
 	return str(target.get("target_id", ""))
+
+static func _movement_route_for_action(content: Dictionary, action: Dictionary, from_node: String, target_node: String) -> Dictionary:
+	var route_params = action.get("route_params", {})
+	if typeof(route_params) == TYPE_DICTIONARY:
+		var route_path: Array = route_params.get("route_path", [])
+		if not route_path.is_empty():
+			var first_step: Dictionary = route_path[0]
+			var last_step: Dictionary = route_path[route_path.size() - 1]
+			if str(first_step.get("from_node", "")) == from_node and str(last_step.get("to_node", "")) == target_node:
+				return {
+					"id": str(route_params.get("route_id", "path_%s_to_%s" % [from_node, target_node])),
+					"from_node": from_node,
+					"to_node": target_node,
+					"base_travel_hours": int(route_params.get("total_travel_hours", action.get("planned_duration_hours", 0))),
+					"risk_tags": route_params.get("risk_tags", _risk_tags_from_route_path(route_path)),
+					"route_path": route_path
+				}
+
+	var direct_route := ContentLoader.route_between(content, from_node, target_node)
+	if not direct_route.is_empty():
+		return direct_route
+	return ContentLoader.route_path_between(content, from_node, target_node)
+
+static func _risk_tags_from_route_path(route_path: Array) -> Array:
+	var risk_tags := []
+	for step in route_path:
+		if typeof(step) != TYPE_DICTIONARY:
+			continue
+		for risk_tag in step.get("risk_tags", []):
+			if not risk_tags.has(risk_tag):
+				risk_tags.append(risk_tag)
+	return risk_tags
+
+static func _route_path_suffix(runtime: Dictionary, content: Dictionary, route: Dictionary) -> String:
+	var route_path: Array = route.get("route_path", [])
+	if route_path.size() <= 1:
+		return ""
+	var node_names := [_node_name(runtime, content, str(route.get("from_node", "")))]
+	for step in route_path:
+		if typeof(step) == TYPE_DICTIONARY:
+			node_names.append(_node_name(runtime, content, str(step.get("to_node", ""))))
+	return "（%s）" % " → ".join(node_names)
 
 static func _current_location_for_actor(runtime: Dictionary, character_deltas: Dictionary, actor_id: String) -> String:
 	if character_deltas.has(actor_id) and character_deltas[actor_id].has("current_location"):

@@ -9,6 +9,7 @@ const ActionValidator = preload("res://scripts/core/action_validator.gd")
 const SettlementService = preload("res://scripts/core/settlement_service.gd")
 const ResultPackageMerger = preload("res://scripts/core/result_package_merger.gd")
 const SaveManager = preload("res://scripts/core/save_manager.gd")
+const MapGraphView = preload("res://scripts/ui/map_graph_view.gd")
 
 var content := {}
 var runtime := {}
@@ -23,7 +24,7 @@ var character_text: RichTextLabel
 var sect_text: RichTextLabel
 var content_label: Label
 var budget_label: Label
-var map_button_grid: GridContainer
+var map_graph_view: Control
 var node_context_text: RichTextLabel
 var add_move_button: Button
 var add_rumor_button: Button
@@ -52,8 +53,15 @@ func _build_ui() -> void:
 	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 
+	var toolbar_scroll := ScrollContainer.new()
+	toolbar_scroll.custom_minimum_size = Vector2(0, 44)
+	toolbar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	toolbar_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(toolbar_scroll)
+
 	var toolbar := HBoxContainer.new()
-	root.add_child(toolbar)
+	toolbar.add_theme_constant_override("separation", 6)
+	toolbar_scroll.add_child(toolbar)
 
 	var new_button := Button.new()
 	new_button.text = "新建本地房间"
@@ -156,10 +164,15 @@ func _build_ui() -> void:
 	budget_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(budget_label)
 
-	var map_row := HBoxContainer.new()
+	var workspace_split := VSplitContainer.new()
+	workspace_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	workspace_split.split_offset = 310
+	root.add_child(workspace_split)
+
+	var map_row := HSplitContainer.new()
 	map_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_row.add_theme_constant_override("separation", 8)
-	root.add_child(map_row)
+	map_row.split_offset = 860
+	workspace_split.add_child(map_row)
 
 	var map_panel := PanelContainer.new()
 	map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -174,24 +187,29 @@ func _build_ui() -> void:
 	map_title.text = "大地图"
 	map_box.add_child(map_title)
 
-	map_button_grid = GridContainer.new()
-	map_button_grid.columns = 5
-	map_button_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_box.add_child(map_button_grid)
+	map_graph_view = MapGraphView.new()
+	map_graph_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_graph_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_graph_view.node_selected.connect(_on_node_pressed)
+	map_box.add_child(map_graph_view)
 
 	node_context_text = _make_panel(map_row, "节点上下文")
 
-	var columns := HBoxContainer.new()
+	var columns := HSplitContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	columns.add_theme_constant_override("separation", 8)
-	root.add_child(columns)
+	columns.split_offset = 230
+	workspace_split.add_child(columns)
 
 	visible_log_text = _make_panel(columns, "玩家可见日志")
-	queue_text = _make_panel(columns, "当前行动预案")
-	character_text = _make_panel(columns, "角色 / 功法 / 背包")
-	sect_text = _make_panel(columns, "宗门 / 资源 / AI")
-	report_text = _make_panel(columns, "回合报告")
-	debug_log_text = _make_panel(columns, "Debug")
+	var lower_split_2 := _make_nested_split(columns, 230)
+	queue_text = _make_panel(lower_split_2, "当前行动预案")
+	var lower_split_3 := _make_nested_split(lower_split_2, 260)
+	character_text = _make_panel(lower_split_3, "角色 / 功法 / 背包")
+	var lower_split_4 := _make_nested_split(lower_split_3, 260)
+	sect_text = _make_panel(lower_split_4, "宗门 / 资源 / AI")
+	var lower_split_5 := _make_nested_split(lower_split_4, 230)
+	report_text = _make_panel(lower_split_5, "回合报告")
+	debug_log_text = _make_panel(lower_split_5, "Debug")
 
 func _make_panel(parent: Node, title: String) -> RichTextLabel:
 	var panel := PanelContainer.new()
@@ -211,9 +229,21 @@ func _make_panel(parent: Node, title: String) -> RichTextLabel:
 	text.bbcode_enabled = false
 	text.fit_content = false
 	text.scroll_active = true
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.clip_contents = true
+	text.selection_enabled = true
 	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_child(text)
 	return text
+
+func _make_nested_split(parent: Node, split_offset: int) -> HSplitContainer:
+	var split := HSplitContainer.new()
+	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.split_offset = split_offset
+	parent.add_child(split)
+	return split
 
 func _on_new_room_pressed() -> void:
 	runtime = RoomFactory.create_local_room(content.get("summary", {}), content)
@@ -236,9 +266,9 @@ func _on_add_move_pressed() -> void:
 	if selected_node_id == from_node:
 		validation_label.text = "角色已经位于%s。" % _node_display_name(selected_node_id)
 		return
-	var route := ContentLoader.route_between(content, from_node, selected_node_id)
+	var route := _route_path_between_visible_nodes(from_node, selected_node_id)
 	if route.is_empty():
-		validation_label.text = "没有可用路线：%s → %s。" % [_node_display_name(from_node), _node_display_name(selected_node_id)]
+		validation_label.text = "没有可用可见路径：%s → %s。" % [_node_display_name(from_node), _node_display_name(selected_node_id)]
 		return
 	queue.append(PersonalActionInstruction.make_move_to_node(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, route))
 	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
@@ -410,7 +440,7 @@ func _refresh() -> void:
 	budget_label.text = _format_budget(validation)
 	_render_map()
 	node_context_text.text = _format_node_context()
-	add_move_button.disabled = selected_node_id == "" or selected_node_id == _planned_location_after_queue(_current_queue()) or ContentLoader.route_between(content, _planned_location_after_queue(_current_queue()), selected_node_id).is_empty()
+	add_move_button.disabled = selected_node_id == "" or selected_node_id == _planned_location_after_queue(_current_queue()) or _route_path_between_visible_nodes(_planned_location_after_queue(_current_queue()), selected_node_id).is_empty()
 	join_sect_button.disabled = _planned_location_after_queue(_current_queue()) != "node_yunlu_gate" or _character_rank() != "none"
 	study_method_button.disabled = not _has_item_instance("basic_dao_method_carrier")
 	cultivation_button.disabled = not _has_main_method()
@@ -457,21 +487,7 @@ func _format_budget(validation: Dictionary) -> String:
 	]
 
 func _render_map() -> void:
-	for child in map_button_grid.get_children():
-		child.queue_free()
-	var node_ids: Array = content.get("tables", {}).get("nodes", {}).keys()
-	node_ids.sort()
-	for node_id in node_ids:
-		var state := _node_state(str(node_id))
-		var visibility := str(state.get("visibility_state", "hidden"))
-		var button := Button.new()
-		button.text = "%s\n%s" % [state.get("display_name", node_id), visibility]
-		button.toggle_mode = true
-		button.button_pressed = str(node_id) == selected_node_id
-		button.disabled = visibility == "hidden"
-		button.custom_minimum_size = Vector2(150, 54)
-		button.pressed.connect(_on_node_pressed.bind(str(node_id)))
-		map_button_grid.add_child(button)
+	map_graph_view.configure(content, runtime, selected_node_id, _current_or_planned_location(false), _planned_location_after_queue(_current_queue()))
 
 func _on_node_pressed(node_id: String) -> void:
 	selected_node_id = node_id
@@ -512,6 +528,10 @@ func _format_node_context() -> String:
 		lines.append_array(slot_lines)
 	lines.append("")
 	lines.append("计划位置：%s" % _node_display_name(_planned_location_after_queue(_current_queue())))
+	var planned_node := _planned_location_after_queue(_current_queue())
+	var route := _route_path_between_visible_nodes(planned_node, selected_node_id)
+	if selected_node_id != planned_node:
+		lines.append("选中路径：%s" % _format_route_path(route))
 	return "\n".join(lines)
 
 func _format_character_panel() -> String:
@@ -732,6 +752,30 @@ func _node_state(node_id: String) -> Dictionary:
 func _node_display_name(node_id: String) -> String:
 	var state := _node_state(node_id)
 	return str(state.get("display_name", state.get("display_name_key", node_id)))
+
+func _route_path_between_visible_nodes(from_node: String, to_node: String) -> Dictionary:
+	return ContentLoader.route_path_between(content, from_node, to_node, _visible_node_ids())
+
+func _visible_node_ids() -> Array:
+	var node_ids := []
+	for node_id in content.get("tables", {}).get("nodes", {}).keys():
+		if str(_node_state(str(node_id)).get("visibility_state", "hidden")) != "hidden":
+			node_ids.append(str(node_id))
+	return node_ids
+
+func _format_route_path(route: Dictionary) -> String:
+	if route.is_empty():
+		return "不可达"
+	var route_path: Array = route.get("route_path", [])
+	var node_names := [_node_display_name(str(route.get("from_node", "")))]
+	for step in route_path:
+		if typeof(step) == TYPE_DICTIONARY:
+			node_names.append(_node_display_name(str(step.get("to_node", ""))))
+	return "%s；%dh；risk=%s" % [
+		" → ".join(node_names),
+		int(route.get("base_travel_hours", 0)),
+		str(route.get("risk_tags", []))
+	]
 
 func _character_rank() -> String:
 	return str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("rank", "none"))

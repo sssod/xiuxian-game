@@ -18,6 +18,7 @@ static func make_rest(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 
 
 static func make_move_to_node(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, route := {}) -> Dictionary:
 	var to_node := str(route.get("to_node", ""))
+	var route_path: Array = route.get("route_path", [])
 	return {
 		"instruction_id": "move_to_node_%02d" % sequence,
 		"action_id": "move_to_node",
@@ -32,7 +33,9 @@ static func make_move_to_node(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequ
 			"route_id": str(route.get("id", "")),
 			"from_node": str(route.get("from_node", "")),
 			"to_node": to_node,
-			"risk_tags": route.get("risk_tags", [])
+			"risk_tags": route.get("risk_tags", []),
+			"total_travel_hours": int(route.get("base_travel_hours", 0)),
+			"route_path": route_path
 		},
 		"status": "draft"
 	}

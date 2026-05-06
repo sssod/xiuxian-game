@@ -21,6 +21,32 @@ func _init() -> void:
 	if not planning_transition["ok"]:
 		failures.append("Phase transition to planning failed: %s" % str(planning_transition))
 
+	var path_runtime := RoomFactory.create_local_room(content.get("summary", {}), content)
+	var path_route := ContentLoader.route_path_between(content, "node_qinghe_village", "node_yunlu_gate", _visible_node_ids(path_runtime, content))
+	if path_route.is_empty():
+		failures.append("Missing visible route path node_qinghe_village -> node_yunlu_gate.")
+	else:
+		var long_queue := [
+			PersonalActionInstruction.make_move_to_node(DemoConstants.LOCAL_CHARACTER_ID, 1, path_route),
+			PersonalActionInstruction.make_rest(DemoConstants.LOCAL_CHARACTER_ID, 2, 24),
+			PersonalActionInstruction.make_rest(DemoConstants.LOCAL_CHARACTER_ID, 3, 24),
+			PersonalActionInstruction.make_rest(DemoConstants.LOCAL_CHARACTER_ID, 4, 24)
+		]
+		path_runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = long_queue
+		var long_validation := ActionValidator.validate_queue(path_runtime, content, DemoConstants.LOCAL_PLAYER_ID, long_queue)
+		if not long_validation["ok"]:
+			failures.append("Direct target path and relaxed action count validation failed: %s" % str(long_validation["errors"]))
+		else:
+			TurnPhaseMachine.transition_to(path_runtime, "waiting_lock")
+			TurnPhaseMachine.transition_to(path_runtime, "settlement")
+			var path_settlement := SettlementService.settle_turn(path_runtime, content, DemoConstants.LOCAL_PLAYER_ID)
+			if not path_settlement["ok"]:
+				failures.append("Direct target path settlement failed: %s" % str(path_settlement["validation"]))
+			else:
+				ResultPackageMerger.merge(path_runtime, path_settlement["packages"])
+				if str(path_runtime["incarnations"][DemoConstants.LOCAL_CHARACTER_ID].get("current_location", "")) != "node_yunlu_gate":
+					failures.append("Expected direct target movement to arrive at node_yunlu_gate.")
+
 	var route := ContentLoader.route_between(content, "node_qinghe_village", "node_market_town")
 	if route.is_empty():
 		failures.append("Missing route node_qinghe_village -> node_market_town.")
@@ -96,3 +122,11 @@ func _actual_entries_include_partial(entries: Array, action_id: String) -> bool:
 		if typeof(entry) == TYPE_DICTIONARY and str(entry.get("action_id", "")) == action_id and str(entry.get("status", "")) == "partial":
 			return true
 	return false
+
+func _visible_node_ids(runtime: Dictionary, content: Dictionary) -> Array:
+	var node_ids := []
+	for node_id in content.get("tables", {}).get("nodes", {}).keys():
+		var state: Dictionary = runtime.get("node_states", {}).get(str(node_id), ContentLoader.node_template(content, str(node_id)))
+		if str(state.get("visibility_state", "hidden")) != "hidden":
+			node_ids.append(str(node_id))
+	return node_ids

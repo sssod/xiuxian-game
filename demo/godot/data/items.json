@@ -1,0 +1,16 @@
+[
+	{
+		"id": "qingling_pill",
+		"display_name": "清灵丹",
+		"item_kind": "stackable_resource",
+		"phase": "C",
+		"resource_input_context": "active_cultivation"
+	},
+	{
+		"id": "stability_talisman",
+		"display_name": "定心符",
+		"item_kind": "stackable_resource",
+		"phase": "C/E",
+		"resource_input_context": "study_or_breakthrough"
+	}
+]

@@ -28,6 +28,17 @@ Unless the user explicitly asks for implementation:
 - Keep responses concise and avoid broad codebase exploration unless it is needed to update an implementation-facing document.
 - If implementation implications appear, record them as implementation notes or open questions instead of editing code.
 
+### Demo Development Exception
+
+When the user explicitly asks for demo development, treat the demo as a design-validation prototype used to test and refine the v2.2 plan, interaction flow, data contracts, and settlement assumptions. Demo code does not mean the overall project has entered the formal production implementation phase.
+
+Demo work should stay clearly scoped and separated from production assumptions:
+
+- Keep demo runtime code, content fixtures, saves, replays, and debugging tools under an explicit demo directory.
+- Prefer reversible Godot 4 / JSON prototypes that preserve v2.2 field names and settlement boundaries.
+- Do not use demo shortcuts as authority to rewrite source-of-truth design docs unless the user explicitly requests a documentation update.
+- Record implementation implications as demo findings, follow-up notes, or open questions instead of treating them as finalized architecture.
+
 ## Project Purpose
 
 `xiuxian-game` is a design-stage independent game project for a room-based multiplayer xiuxian reincarnation sandbox.
@@ -102,24 +113,26 @@ Resource check dates are recorded per section.
 
 ### Notion
 
-Checked on 2026-05-01.
+Checked on 2026-05-06.
 
 Latest checked Notion package entry:
 
-- `修仙轮回沙盒_设计文档包_v2.1`
-- https://app.notion.com/p/352dffce59dc81659844f34177712f05
+- `修仙轮回沙盒_设计文档包_v2.2`
+- https://www.notion.so/358dffce59dc801790b1d4f6009d2a9e
 - Contains mounted entries for `01_基础与总览`, `02_核心系统规格`, `03_实现交付`, `04_UIUX与效果图`, `README`, `MANIFEST`, and `QA_自动检查报告`.
 
-Note: the current local source of truth is v2.2. The Notion package above was last checked as v2.1 and was not re-imported during the 2026-05-06 local merge.
+Note: the v2.2 Notion parent page was repaired on 2026-05-06 from the `修仙轮回沙盒_设计文档包_v2.2 Import May 6, 2026` wrapper page. The blank original imported folder root is retained only under the zip import record as `修仙轮回沙盒_设计文档包_v2.2（原导入根，已归并）`.
 
 Zip import / page mapping record:
 
-- `Zip Import - 修仙轮回沙盒_设计文档包_v2.1.zip - Apr 30, 2026`
-- https://app.notion.com/p/352dffce59dc81489e33c21f3c5beb42
-- Records the original zip import and source-file-to-Notion-page mappings.
+- `Zip Import - 修仙轮回沙盒_设计文档包_v2.2.zip - May 6, 2026`
+- https://www.notion.so/358dffce59dc818b9096fa160cb7933b
+- Records the v2.2 zip import and source-file-to-Notion-page mappings.
 
 Historical references:
 
+- `[已过时]修仙轮回沙盒_设计文档包_v2.1`: https://www.notion.so/352dffce59dc81659844f34177712f05
+- `Zip Import - 修仙轮回沙盒_设计文档包_v2.1.zip - Apr 30, 2026`: https://app.notion.com/p/352dffce59dc81489e33c21f3c5beb42
 - `修仙轮回沙盒｜项目总览与顶层设计定案 0424`: https://app.notion.com/p/0c9dffce59dc83d49a4c8147a47b6b36
 - `修仙轮回沙盒_UIUX需求最终方案_v1.1`: https://app.notion.com/p/351dffce59dc8062802cd14ff328e743
 

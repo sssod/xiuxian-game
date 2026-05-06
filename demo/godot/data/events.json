@@ -1,0 +1,10 @@
+[
+	{
+		"id": "road_minor_delay",
+		"display_name": "山路小延误",
+		"phase": "B",
+		"trigger_scope": "movement",
+		"consumed_hours": 4,
+		"result_package_policy": "event_outputs_delta_only"
+	}
+]

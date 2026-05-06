@@ -1,0 +1,9 @@
+[
+	{
+		"id": "sect_yunlu",
+		"display_name": "云麓宗",
+		"home_node_id": "node_yunlu_gate",
+		"phase": "D",
+		"active_continuous_action_policy": "at_most_one"
+	}
+]

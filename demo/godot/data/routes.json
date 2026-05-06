@@ -1,0 +1,34 @@
+[
+	{
+		"id": "route_qinghe_to_outer_road",
+		"from_node": "node_qinghe_village",
+		"to_node": "node_outer_mountain_road",
+		"base_travel_hours": 8,
+		"risk_tags": ["minor_delay"],
+		"unlock_conditions": []
+	},
+	{
+		"id": "route_qinghe_to_market",
+		"from_node": "node_qinghe_village",
+		"to_node": "node_market_town",
+		"base_travel_hours": 10,
+		"risk_tags": [],
+		"unlock_conditions": []
+	},
+	{
+		"id": "route_outer_road_to_yunlu_road",
+		"from_node": "node_outer_mountain_road",
+		"to_node": "node_yunlu_mountain_road",
+		"base_travel_hours": 14,
+		"risk_tags": ["wild_pressure"],
+		"unlock_conditions": []
+	},
+	{
+		"id": "route_yunlu_road_to_gate",
+		"from_node": "node_yunlu_mountain_road",
+		"to_node": "node_yunlu_gate",
+		"base_travel_hours": 6,
+		"risk_tags": ["sect_patrol"],
+		"unlock_conditions": []
+	}
+]

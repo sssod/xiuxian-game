@@ -1,0 +1,18 @@
+[
+	{
+		"id": "sect_patrol_route",
+		"display_name": "巡护山道",
+		"sect_id": "sect_yunlu",
+		"target_node_id": "node_yunlu_mountain_road",
+		"phase": "D",
+		"result_direction": "lower_route_risk"
+	},
+	{
+		"id": "sect_maintain_training_site",
+		"display_name": "维护静室",
+		"sect_id": "sect_yunlu",
+		"target_node_id": "node_outer_sect_room",
+		"phase": "D",
+		"result_direction": "improve_cultivation_site"
+	}
+]

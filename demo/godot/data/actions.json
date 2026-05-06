@@ -1,0 +1,27 @@
+[
+	{
+		"id": "rest_or_guard",
+		"display_name": "休整 / 警戒",
+		"phase": "A",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 24,
+		"resource_input_policy": "none",
+		"description": "Phase A fallback action for empty settlement and safe time advancement."
+	},
+	{
+		"id": "move_to_node",
+		"display_name": "前往节点",
+		"phase": "B",
+		"action_kind": "movement",
+		"default_duration_hours": 12,
+		"resource_input_policy": "contextual"
+	},
+	{
+		"id": "ask_for_rumor",
+		"display_name": "打听消息",
+		"phase": "B",
+		"action_kind": "personal_continuous_optional",
+		"default_duration_hours": 8,
+		"resource_input_policy": "contextual"
+	}
+]

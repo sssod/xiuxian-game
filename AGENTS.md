@@ -196,10 +196,16 @@ The repo is currently documentation-first. Do not invent engine, backend, databa
 - When updating governance, keep resource links, checked dates, and source precedence current.
 - If Notion or Figma resources move, update the External Resource Index with the new URL, title, and checked date.
 
-## Demo Test Notes
+## Godot Headless Test Guidance
 
-- Checked on 2026-05-06: Godot headless self-tests may need permission to write `user://logs` outside the workspace sandbox. A first sandboxed run can fail or crash while opening a Godot log file such as `user://logs/godot2026-05-06T21.10.09.log`; rerun the same headless command with approved escalation before treating it as a test failure.
-- On 2026-05-06, after rerunning Godot headless with approved escalation, Phase A-E demo self-tests all passed.
+When running Godot headless demo self-tests from Codex, prefer requesting approved escalation for the Godot command up front. Godot writes `user://logs` outside the workspace sandbox, and a sandboxed first run can crash while opening a log file before the test script runs.
+
+Recommended operation:
+
+1. Run `/Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/<test_name>.gd` with approved escalation.
+2. If a sandboxed run was already attempted and crashes while opening `user://logs/...`, do not treat that as a gameplay or test regression.
+3. Rerun the exact same headless command with approved escalation, then judge the test result from that rerun.
+
 
 ## Useful Commands
 

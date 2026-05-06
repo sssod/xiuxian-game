@@ -20,6 +20,7 @@ var report_text: RichTextLabel
 var visible_log_text: RichTextLabel
 var debug_log_text: RichTextLabel
 var character_text: RichTextLabel
+var sect_text: RichTextLabel
 var content_label: Label
 var budget_label: Label
 var map_button_grid: GridContainer
@@ -30,6 +31,8 @@ var join_sect_button: Button
 var study_method_button: Button
 var cultivation_button: Button
 var cultivation_with_pill_button: Button
+var request_qingling_button: Button
+var gather_resource_button: Button
 var selected_node_id := ""
 
 func _ready() -> void:
@@ -88,6 +91,16 @@ func _build_ui() -> void:
 	cultivation_with_pill_button.text = "吐纳 + 清灵丹"
 	cultivation_with_pill_button.pressed.connect(_on_add_cultivation_pressed.bind(true))
 	toolbar.add_child(cultivation_with_pill_button)
+
+	request_qingling_button = Button.new()
+	request_qingling_button.text = "申请清灵丹"
+	request_qingling_button.pressed.connect(_on_add_request_qingling_pressed)
+	toolbar.add_child(request_qingling_button)
+
+	gather_resource_button = Button.new()
+	gather_resource_button.text = "采集资源"
+	gather_resource_button.pressed.connect(_on_add_gather_resource_pressed)
+	toolbar.add_child(gather_resource_button)
 
 	var clear_button := Button.new()
 	clear_button.text = "清空预案"
@@ -158,6 +171,7 @@ func _build_ui() -> void:
 	visible_log_text = _make_panel(columns, "玩家可见日志")
 	queue_text = _make_panel(columns, "当前行动预案")
 	character_text = _make_panel(columns, "角色 / 功法 / 背包")
+	sect_text = _make_panel(columns, "宗门 / 资源 / AI")
 	report_text = _make_panel(columns, "回合报告")
 	debug_log_text = _make_panel(columns, "Debug")
 
@@ -256,6 +270,26 @@ func _on_add_cultivation_pressed(use_qingling_pill: bool) -> void:
 	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
 	_refresh()
 
+func _on_add_request_qingling_pressed() -> void:
+	var queue := _current_queue()
+	var template := ContentLoader.action_template(content, "request_sect_resource")
+	var duration := int(template.get("default_duration_hours", 4))
+	queue.append(PersonalActionInstruction.make_request_sect_resource(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, "sect_yunlu", "qingling_pill", 1, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
+func _on_add_gather_resource_pressed() -> void:
+	var queue := _current_queue()
+	var node_id := _planned_location_after_queue(queue)
+	var template := ContentLoader.action_template(content, "gather_resource")
+	var duration := int(template.get("default_duration_hours", 24))
+	queue.append(PersonalActionInstruction.make_gather_resource(DemoConstants.LOCAL_CHARACTER_ID, queue.size() + 1, node_id, duration))
+	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = queue
+	selected_node_id = node_id
+	TurnPhaseMachine.transition_to(runtime, "personal_action_planning")
+	_refresh()
+
 func _on_clear_actions_pressed() -> void:
 	runtime["pending_player_decisions"][DemoConstants.LOCAL_PLAYER_ID] = []
 	_refresh()
@@ -294,7 +328,7 @@ func _on_load_pressed() -> void:
 	var result := SaveManager.load_game()
 	if result["ok"]:
 		runtime = result["runtime"]
-		RoomFactory.ensure_phase_c_runtime_state(runtime, content)
+		RoomFactory.ensure_phase_d_runtime_state(runtime, content)
 		selected_node_id = _current_or_planned_location()
 		validation_label.text = "读取：%s" % result["path"]
 	else:
@@ -304,7 +338,7 @@ func _on_load_pressed() -> void:
 func _refresh() -> void:
 	if runtime.is_empty():
 		return
-	RoomFactory.ensure_phase_c_runtime_state(runtime, content)
+	RoomFactory.ensure_phase_d_runtime_state(runtime, content)
 	if selected_node_id == "":
 		selected_node_id = _current_or_planned_location()
 	var room: Dictionary = runtime["room_state"]
@@ -333,8 +367,11 @@ func _refresh() -> void:
 	study_method_button.disabled = not _has_item_instance("basic_dao_method_carrier")
 	cultivation_button.disabled = not _has_main_method()
 	cultivation_with_pill_button.disabled = not _has_main_method() or not _has_item_stack("qingling_pill")
+	request_qingling_button.disabled = not _has_sect_permission("request_resources") or not _sect_storage_has_stack("sect_yunlu", "qingling_pill")
+	gather_resource_button.disabled = not _planned_node_has_resource_slot(_planned_location_after_queue(_current_queue()))
 	queue_text.text = _format_queue()
 	character_text.text = _format_character_panel()
+	sect_text.text = _format_sect_panel()
 	visible_log_text.text = _format_logs(runtime.get("visible_logs", []))
 	debug_log_text.text = _format_logs(runtime.get("debug_logs", []))
 	report_text.text = _format_report(runtime.get("last_report", {}))
@@ -416,6 +453,13 @@ func _format_node_context() -> String:
 			to_visibility
 		])
 	lines.append("")
+	lines.append("资源槽：")
+	var slot_lines := _resource_slot_lines_for_node(selected_node_id)
+	if slot_lines.is_empty():
+		lines.append("- 无")
+	else:
+		lines.append_array(slot_lines)
+	lines.append("")
 	lines.append("计划位置：%s" % _node_display_name(_planned_location_after_queue(_current_queue())))
 	return "\n".join(lines)
 
@@ -478,6 +522,45 @@ func _format_character_panel() -> String:
 			str(effect.get("effect_channel", ""))
 		])
 	if character.get("active_resource_effect_refs", []).is_empty():
+		lines.append("- 无")
+	return "\n".join(lines)
+
+func _format_sect_panel() -> String:
+	var sect: Dictionary = runtime.get("sect_states", {}).get("sect_yunlu", {})
+	if sect.is_empty():
+		return "无宗门状态。"
+	var stock: Dictionary = sect.get("sect_resource_stock", {})
+	var active: Dictionary = sect.get("active_continuous_action", {})
+	var lines := [
+		"%s | home=%s" % [sect.get("display_name", "sect_yunlu"), _node_display_name(str(sect.get("home_node_id", "")))],
+		"权限：%s" % str(runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("permissions", [])),
+		"库存：灵石 %s / 修炼资源 %s / 材料 %s / 人力 %s / 声望 %s" % [
+			str(stock.get("spirit_stone", 0)),
+			str(stock.get("cultivation_resource", 0)),
+			str(stock.get("material_stock", 0)),
+			str(stock.get("manpower", 0)),
+			str(stock.get("sect_reputation", 0))
+		],
+		"宗门仓库:"
+	]
+	var storage_id := str(sect.get("storage_container_ref", {}).get("container_id", ""))
+	var storage: Dictionary = runtime.get("asset_containers", {}).get(storage_id, {})
+	for stack_id in storage.get("item_stack_refs", []):
+		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
+		lines.append("- %s x%s" % [str(stack.get("item_template_id", stack_id)), str(stack.get("amount", ""))])
+	lines.append("")
+	lines.append("唯一持续行动：%s status=%s progress=%.0f%% target=%s" % [
+		str(active.get("visible_summary_key", active.get("action_id", "none"))),
+		str(active.get("status", "none")),
+		float(active.get("progress", 0.0)) * 100.0,
+		_node_display_name(str(active.get("target_node_id", "")))
+	])
+	lines.append("")
+	lines.append("宗门日志:")
+	for entry in runtime.get("sect_logs", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			lines.append("[t%s h%s] %s" % [str(entry.get("turn_id", "")), str(entry.get("world_hour", "")), str(entry.get("message", ""))])
+	if runtime.get("sect_logs", []).is_empty():
 		lines.append("- 无")
 	return "\n".join(lines)
 
@@ -607,3 +690,36 @@ func _has_item_instance(item_template_id: String) -> bool:
 		if str(instance.get("item_template_id", "")) == item_template_id:
 			return true
 	return false
+
+func _has_sect_permission(permission: String) -> bool:
+	return runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("permissions", []).has(permission)
+
+func _sect_storage_has_stack(sect_id: String, item_template_id: String) -> bool:
+	var sect: Dictionary = runtime.get("sect_states", {}).get(sect_id, {})
+	var storage_id := str(sect.get("storage_container_ref", {}).get("container_id", ""))
+	var storage: Dictionary = runtime.get("asset_containers", {}).get(storage_id, {})
+	for stack_id in storage.get("item_stack_refs", []):
+		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
+		if str(stack.get("item_template_id", "")) == item_template_id and int(stack.get("amount", 0)) > 0:
+			return true
+	return false
+
+func _planned_node_has_resource_slot(node_id: String) -> bool:
+	for slot_state in runtime.get("resource_slot_states", {}).values():
+		if str(slot_state.get("node_id", "")) == node_id and int(slot_state.get("abundance", 0)) > 0:
+			return true
+	return false
+
+func _resource_slot_lines_for_node(node_id: String) -> Array:
+	var lines := []
+	for slot_state in runtime.get("resource_slot_states", {}).values():
+		if str(slot_state.get("node_id", "")) != node_id:
+			continue
+		lines.append("- %s item=%s abundance=%s/%s state=%s" % [
+			str(slot_state.get("slot_id", "")),
+			str(slot_state.get("resource_item_template_id", "")),
+			str(slot_state.get("abundance", 0)),
+			str(slot_state.get("max_abundance", 0)),
+			str(slot_state.get("state_tags", []))
+		])
+	return lines

@@ -89,6 +89,28 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 				errors.append("study_method requires a complete MethodCarrierItem in character inventory.")
 			if action_id == "active_cultivation" and not _has_main_dao_method(runtime, actor_id):
 				errors.append("active_cultivation requires an existing MethodState set as main_dao_method_ref.")
+			if action_id == "gather_resource" and not _node_has_available_resource_slot(runtime, action_node):
+				errors.append("gather_resource requires an available ResourceSlotState at %s." % action_node)
+		elif action_id == "request_sect_resource":
+			if typeof(target) != TYPE_DICTIONARY or str(target.get("target_type", "")) != "sect":
+				errors.append("request_sect_resource target must be a sect target.")
+			else:
+				var sect_id := str(target.get("target_id", ""))
+				var item_template_id := str(target.get("item_template_id", ""))
+				var amount := int(target.get("amount", 1))
+				if ContentLoader.sect_template(content, sect_id).is_empty():
+					errors.append("request_sect_resource target sect does not exist: %s." % sect_id)
+				if not _character_has_sect_permission(runtime, actor_id, sect_id, "request_resources"):
+					errors.append("request_sect_resource requires request_resources permission in %s." % sect_id)
+				if item_template_id == "" or ContentLoader.item_template(content, item_template_id).is_empty():
+					errors.append("request_sect_resource item_template_id is invalid: %s." % item_template_id)
+				var allowed_items: Array = template.get("allowed_item_template_ids", [])
+				if not allowed_items.is_empty() and not allowed_items.has(item_template_id):
+					errors.append("request_sect_resource item is not allowed in Phase D demo: %s." % item_template_id)
+				if amount <= 0:
+					errors.append("request_sect_resource amount must be positive.")
+				if not _container_has_stack(runtime, _sect_storage_container_id(runtime, content, sect_id), item_template_id, amount):
+					errors.append("request_sect_resource sect storage lacks %s x%d." % [item_template_id, amount])
 
 	if planned_hours > budget_hours:
 		errors.append("Action budget exceeded: %dh planned / %dh available." % [planned_hours, budget_hours])
@@ -150,5 +172,22 @@ static func _container_has_stack(runtime: Dictionary, container_id: String, item
 	for stack_id in container.get("item_stack_refs", []):
 		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
 		if str(stack.get("item_template_id", "")) == item_template_id and int(stack.get("amount", 0)) >= amount:
+			return true
+	return false
+
+static func _character_has_sect_permission(runtime: Dictionary, actor_id: String, sect_id: String, permission: String) -> bool:
+	var identity: Dictionary = runtime.get("incarnations", {}).get(actor_id, {}).get("sect_identity", {})
+	if str(identity.get("sect_id", "")) != sect_id:
+		return false
+	return identity.get("permissions", []).has(permission)
+
+static func _sect_storage_container_id(runtime: Dictionary, content: Dictionary, sect_id: String) -> String:
+	if runtime.get("sect_states", {}).has(sect_id):
+		return str(runtime["sect_states"][sect_id].get("storage_container_ref", {}).get("container_id", ""))
+	return str(ContentLoader.sect_template(content, sect_id).get("storage_container_id", ""))
+
+static func _node_has_available_resource_slot(runtime: Dictionary, node_id: String) -> bool:
+	for slot_state in runtime.get("resource_slot_states", {}).values():
+		if str(slot_state.get("node_id", "")) == node_id and int(slot_state.get("abundance", 0)) > 0:
 			return true
 	return false

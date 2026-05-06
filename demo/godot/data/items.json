@@ -70,5 +70,31 @@
 		"method_template_id": "market_lightfoot_technique",
 		"method_type": "technique_method",
 		"theoretical_max_cap_stage": "A-1"
+	},
+	{
+		"id": "spirit_stone_stack",
+		"display_name": "灵石",
+		"item_kind": "stackable_currency",
+		"phase": "C/D",
+		"tier_code": "M0",
+		"quality_code": "common"
+	},
+	{
+		"id": "spirit_grass_stack",
+		"display_name": "灵草",
+		"item_kind": "stackable_material",
+		"phase": "D",
+		"tier_code": "M0",
+		"quality_code": "common",
+		"resource_slot_kind": "spirit_grass"
+	},
+	{
+		"id": "blackstone_ore_stack",
+		"display_name": "黑石矿",
+		"item_kind": "stackable_material",
+		"phase": "D",
+		"tier_code": "M0",
+		"quality_code": "common",
+		"resource_slot_kind": "blackstone_ore"
 	}
 ]

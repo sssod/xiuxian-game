@@ -7,6 +7,7 @@ static func create_local_room(content_summary := {}, content := {}) -> Dictionar
 	var turn_config := DemoConstants.default_turn_config()
 	var time_state := DemoConstants.make_time_state(1, 1, 0)
 	var character_inventory_id := "container_character_local_inventory"
+	var sect_storage_id := "container_sect_yunlu_storage"
 	var room_state := {
 		"room_id": "local_demo_room",
 		"room_mode": "local_single_player_demo",
@@ -55,12 +56,15 @@ static func create_local_room(content_summary := {}, content := {}) -> Dictionar
 			DemoConstants.LOCAL_CHARACTER_ID: _default_character(character_inventory_id)
 		},
 		"asset_containers": {
-			character_inventory_id: _default_character_inventory(character_inventory_id)
+			character_inventory_id: _default_character_inventory(character_inventory_id),
+			sect_storage_id: _default_sect_storage(sect_storage_id, "sect_yunlu")
 		},
-		"item_stacks": {},
+		"item_stacks": _make_initial_sect_item_stacks(content),
 		"item_instances": {},
 		"method_states": {},
 		"active_resource_effects": {},
+		"sect_states": _make_sect_states(content),
+		"resource_slot_states": _make_resource_slot_states(content),
 		"pending_player_decisions": {
 			DemoConstants.LOCAL_PLAYER_ID: []
 		},
@@ -68,6 +72,7 @@ static func create_local_room(content_summary := {}, content := {}) -> Dictionar
 		"debug_logs": [],
 		"asset_logs": [],
 		"character_logs": [],
+		"sect_logs": [],
 		"last_result_packages": [],
 		"last_report": {},
 		"last_replay": {},
@@ -94,7 +99,7 @@ static func create_local_room(content_summary := {}, content := {}) -> Dictionar
 
 	runtime["visible_logs"].append(LogUtils.visible("room_created", "本地 demo 房间已创建。", 1, 1, 0))
 	runtime["character_logs"].append(LogUtils.visible("character_created", "第一世角色出生于青禾村。", 1, 1, 0))
-	runtime["debug_logs"].append(LogUtils.debug("room_initialized", "RoomState initialized for Phase C demo skeleton.", 1, 0, room_state.duplicate(true)))
+	runtime["debug_logs"].append(LogUtils.debug("room_initialized", "RoomState initialized for Phase D demo skeleton.", 1, 0, room_state.duplicate(true)))
 	return runtime
 
 static func set_phase(runtime: Dictionary, phase: String) -> void:
@@ -145,6 +150,35 @@ static func ensure_phase_c_runtime_state(runtime: Dictionary, content: Dictionar
 	if runtime.get("incarnations", {}).has(DemoConstants.LOCAL_CHARACTER_ID):
 		_merge_missing(runtime["incarnations"][DemoConstants.LOCAL_CHARACTER_ID], _default_character("container_character_local_inventory"))
 
+static func ensure_phase_d_runtime_state(runtime: Dictionary, content: Dictionary) -> void:
+	ensure_phase_c_runtime_state(runtime, content)
+	if not runtime.has("sect_states"):
+		runtime["sect_states"] = _make_sect_states(content)
+	else:
+		for sect_id in _make_sect_states(content).keys():
+			if not runtime["sect_states"].has(sect_id):
+				runtime["sect_states"][sect_id] = _default_sect_state(content, sect_id)
+			else:
+				_merge_missing(runtime["sect_states"][sect_id], _default_sect_state(content, sect_id))
+	if not runtime.has("resource_slot_states"):
+		runtime["resource_slot_states"] = _make_resource_slot_states(content)
+	else:
+		for slot_id in _make_resource_slot_states(content).keys():
+			if not runtime["resource_slot_states"].has(slot_id):
+				runtime["resource_slot_states"][slot_id] = _make_resource_slot_states(content)[slot_id]
+	if not runtime.has("sect_logs"):
+		runtime["sect_logs"] = []
+	if not runtime["asset_containers"].has("container_sect_yunlu_storage"):
+		runtime["asset_containers"]["container_sect_yunlu_storage"] = _default_sect_storage("container_sect_yunlu_storage", "sect_yunlu")
+	var initial_stacks := _make_initial_sect_item_stacks(content)
+	for stack_id in initial_stacks.keys():
+		if not runtime["item_stacks"].has(stack_id):
+			runtime["item_stacks"][stack_id] = initial_stacks[stack_id]
+		var storage: Dictionary = runtime["asset_containers"]["container_sect_yunlu_storage"]
+		if not storage.get("item_stack_refs", []).has(stack_id):
+			storage["item_stack_refs"].append(stack_id)
+		runtime["asset_containers"]["container_sect_yunlu_storage"] = storage
+
 static func _make_map_graph(content: Dictionary) -> Dictionary:
 	var routes := {}
 	for route_id in content.get("tables", {}).get("routes", {}).keys():
@@ -183,6 +217,133 @@ static func _make_node_states(content: Dictionary) -> Dictionary:
 			"world_log_refs": []
 		}
 	return node_states
+
+static func _make_sect_states(content: Dictionary) -> Dictionary:
+	var sect_states := {}
+	for sect_id in content.get("tables", {}).get("sects", {}).keys():
+		sect_states[sect_id] = _default_sect_state(content, str(sect_id))
+	return sect_states
+
+static func _default_sect_state(content: Dictionary, sect_id: String) -> Dictionary:
+	var template: Dictionary = content.get("tables", {}).get("sects", {}).get(sect_id, {})
+	var initial_stock: Dictionary = template.get("initial_stock", {})
+	return {
+		"sect_id": sect_id,
+		"display_name": template.get("display_name", sect_id),
+		"home_node_id": template.get("home_node_id", ""),
+		"identity_ranks": template.get("identity_ranks", ["outer", "inner"]),
+		"permissions_by_rank": template.get("permissions_by_rank", {}),
+		"storage_container_ref": {
+			"container_type": "SectStorage",
+			"container_id": template.get("storage_container_id", "container_%s_storage" % sect_id)
+		},
+		"sect_resource_stock": {
+			"sect_id": sect_id,
+			"spirit_stone": int(initial_stock.get("spirit_stone", 0)),
+			"cultivation_resource": int(initial_stock.get("cultivation_resource", 0)),
+			"material_stock": int(initial_stock.get("material_stock", 0)),
+			"manpower": int(initial_stock.get("manpower", 0)),
+			"sect_reputation": int(initial_stock.get("sect_reputation", 0)),
+			"reserved_resources": [],
+			"income_sources": [],
+			"expense_records": [],
+			"stock_logs": []
+		},
+		"active_continuous_action": {
+			"action_id": "",
+			"sect_id": sect_id,
+			"action_type": "none",
+			"target_node_id": "",
+			"status": "none",
+			"started_turn_id": 0,
+			"started_world_day": 0,
+			"expected_duration_turns": 0,
+			"expected_duration_hours": 0,
+			"accumulated_hours": 0,
+			"progress": 0.0,
+			"resource_budget": {},
+			"manpower_budget": 0,
+			"ai_reason_tags": [],
+			"interruption_rules": {},
+			"related_event_refs": [],
+			"visible_summary_key": "",
+			"world_log_refs": []
+		},
+		"sect_logs": []
+	}
+
+static func _default_sect_storage(container_id: String, sect_id: String) -> Dictionary:
+	return {
+		"container_id": container_id,
+		"container_type": "SectStorage",
+		"owner_ref": sect_id,
+		"location_ref": "sect:%s" % sect_id,
+		"access_rules": {"sect_permission": "request_resources"},
+		"visibility_state": "member_visible",
+		"item_stack_refs": _initial_sect_stack_refs(sect_id),
+		"item_instance_refs": [],
+		"currency_refs": [],
+		"log_refs": []
+	}
+
+static func _make_initial_sect_item_stacks(content: Dictionary) -> Dictionary:
+	var stacks := {}
+	for sect_id in content.get("tables", {}).get("sects", {}).keys():
+		var template: Dictionary = content["tables"]["sects"][sect_id]
+		for stack_entry in template.get("initial_item_stacks", []):
+			if typeof(stack_entry) != TYPE_DICTIONARY:
+				continue
+			var item_template_id := str(stack_entry.get("item_template_id", ""))
+			if item_template_id == "":
+				continue
+			var stack_id := "stack_%s_%s" % [sect_id, item_template_id]
+			stacks[stack_id] = {
+				"stack_id": stack_id,
+				"item_template_id": item_template_id,
+				"tier_code": "M0",
+				"quality_code": "common",
+				"amount": int(stack_entry.get("amount", 0)),
+				"key_state_tags": ["sect_storage"],
+				"bind_state": "unbound",
+				"owner_container_ref": {
+					"container_type": "SectStorage",
+					"container_id": template.get("storage_container_id", "container_%s_storage" % str(sect_id))
+				}
+			}
+	return stacks
+
+static func _initial_sect_stack_refs(sect_id: String) -> Array:
+	return [
+		"stack_%s_qingling_pill" % sect_id,
+		"stack_%s_stability_talisman" % sect_id,
+		"stack_%s_spirit_stone_stack" % sect_id
+	]
+
+static func _make_resource_slot_states(content: Dictionary) -> Dictionary:
+	var slot_states := {}
+	for node_id in content.get("tables", {}).get("nodes", {}).keys():
+		var node: Dictionary = content["tables"]["nodes"][node_id]
+		for slot_id in node.get("resource_slots", []):
+			var slot := str(slot_id)
+			var item_template_id := "spirit_grass_stack"
+			var abundance := 5
+			var max_abundance := 8
+			if slot == "slot_blackstone_ore":
+				item_template_id = "blackstone_ore_stack"
+				abundance = 4
+				max_abundance = 10
+			slot_states[slot] = {
+				"slot_id": slot,
+				"node_id": str(node_id),
+				"resource_item_template_id": item_template_id,
+				"discovery_state": node.get("visibility_state", "hidden"),
+				"abundance": abundance,
+				"max_abundance": max_abundance,
+				"regeneration_per_turn": 1,
+				"control_or_influence_tags": [node.get("control_owner", "none")],
+				"state_tags": []
+			}
+	return slot_states
 
 static func _default_true_spirit() -> Dictionary:
 	return {

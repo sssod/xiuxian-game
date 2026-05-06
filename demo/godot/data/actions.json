@@ -41,6 +41,16 @@
 		"resource_input_policy": "contextual"
 	},
 	{
+		"id": "request_sect_resource",
+		"display_name": "申请宗门资源",
+		"phase": "D",
+		"action_kind": "personal_request",
+		"default_duration_hours": 4,
+		"resource_input_policy": "none",
+		"required_permission": "request_resources",
+		"allowed_item_template_ids": ["qingling_pill", "stability_talisman"]
+	},
+	{
 		"id": "join_sect_event",
 		"display_name": "入门云麓宗",
 		"phase": "C",

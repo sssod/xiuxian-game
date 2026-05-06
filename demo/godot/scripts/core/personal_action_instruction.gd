@@ -65,6 +65,26 @@ static func make_active_cultivation(actor_id := DemoConstants.LOCAL_CHARACTER_ID
 		instruction["resource_inputs"] = [binding]
 	return instruction
 
+static func make_gather_resource(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, node_id := "", planned_duration_hours := 24) -> Dictionary:
+	return make_node_action("gather_resource", actor_id, sequence, node_id, planned_duration_hours)
+
+static func make_request_sect_resource(actor_id := DemoConstants.LOCAL_CHARACTER_ID, sequence := 1, sect_id := "sect_yunlu", item_template_id := "qingling_pill", amount := 1, planned_duration_hours := 4) -> Dictionary:
+	return {
+		"instruction_id": "request_sect_resource_%02d" % sequence,
+		"action_id": "request_sect_resource",
+		"actor_id": actor_id,
+		"target": {
+			"target_type": "sect",
+			"target_id": sect_id,
+			"item_template_id": item_template_id,
+			"amount": amount,
+			"request_purpose": "cultivation_resource"
+		},
+		"planned_duration_hours": planned_duration_hours,
+		"resource_bindings": [],
+		"status": "draft"
+	}
+
 static func make_qingling_pill_binding(instruction_id: String, actor_id := DemoConstants.LOCAL_CHARACTER_ID, planned_use_hours := 24) -> Dictionary:
 	return {
 		"binding_id": "binding_qingling_%s" % instruction_id,

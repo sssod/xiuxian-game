@@ -49,6 +49,17 @@ static func item_template(content: Dictionary, item_template_id: String) -> Dict
 static func sect_template(content: Dictionary, sect_id: String) -> Dictionary:
 	return content.get("tables", {}).get("sects", {}).get(sect_id, {})
 
+static func ai_action_template(content: Dictionary, action_id: String) -> Dictionary:
+	return content.get("tables", {}).get("ai_actions", {}).get(action_id, {})
+
+static func ai_actions_for_sect(content: Dictionary, sect_id: String) -> Array:
+	var actions := []
+	for action in content.get("tables", {}).get("ai_actions", {}).values():
+		if str(action.get("sect_id", "")) == sect_id:
+			actions.append(action)
+	actions.sort_custom(func(a, b): return int(a.get("priority", 0)) > int(b.get("priority", 0)))
+	return actions
+
 static func route_between(content: Dictionary, from_node: String, to_node: String) -> Dictionary:
 	for route in content.get("tables", {}).get("routes", {}).values():
 		if str(route.get("from_node", "")) == from_node and str(route.get("to_node", "")) == to_node:

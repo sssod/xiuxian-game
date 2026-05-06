@@ -3,16 +3,50 @@
 		"id": "sect_patrol_route",
 		"display_name": "巡护山道",
 		"sect_id": "sect_yunlu",
+		"action_type": "patrol_route",
 		"target_node_id": "node_yunlu_mountain_road",
 		"phase": "D",
-		"result_direction": "lower_route_risk"
+		"priority": 100,
+		"expected_duration_turns": 2,
+		"expected_duration_hours": 240,
+		"resource_budget": {"manpower_per_turn": 1, "material_stock_per_turn": 0},
+		"ai_reason_tags": ["route_risk_high", "sect_domain"],
+		"result_direction": "lower_route_risk",
+		"node_delta_on_progress": {
+			"danger_delta": -1,
+			"append_state_tags": ["sect_patrol_recent"]
+		}
 	},
 	{
 		"id": "sect_maintain_training_site",
 		"display_name": "维护静室",
 		"sect_id": "sect_yunlu",
+		"action_type": "maintain_training_site",
 		"target_node_id": "node_outer_sect_room",
 		"phase": "D",
-		"result_direction": "improve_cultivation_site"
+		"priority": 80,
+		"expected_duration_turns": 2,
+		"expected_duration_hours": 240,
+		"resource_budget": {"manpower_per_turn": 1, "material_stock_per_turn": 1},
+		"ai_reason_tags": ["training_site_support", "outer_disciple_growth"],
+		"result_direction": "improve_cultivation_site",
+		"node_delta_on_progress": {
+			"aura_delta": 1,
+			"append_state_tags": ["training_site_maintained"]
+		}
+	},
+	{
+		"id": "sect_mine_resource_node",
+		"display_name": "开采黑石岭",
+		"sect_id": "sect_yunlu",
+		"action_type": "mine_resource_node",
+		"target_node_id": "node_blackstone_ridge",
+		"phase": "D",
+		"priority": 60,
+		"expected_duration_turns": 3,
+		"expected_duration_hours": 360,
+		"resource_budget": {"manpower_per_turn": 2, "material_stock_per_turn": 0},
+		"ai_reason_tags": ["material_shortage", "wild_pressure"],
+		"result_direction": "increase_material_stock"
 	}
 ]

@@ -140,7 +140,7 @@ Treat historical Notion pages as traceability only when v2.2 is silent.
 
 ### Figma
 
-Checked on 2026-05-04.
+Checked on 2026-05-07.
 
 Current Figma UI file:
 
@@ -150,20 +150,25 @@ Current Figma UI file:
 
 Located page and frames:
 
-- Current main UI page: `UI_MainFrame_Rebuild_v0.9`, node `89:2`
-- State frame: `State_01_Prepare_InfoProcessing_1920x1080`, node `89:3`
-- State frame: `State_02_Planning_WithContinuation_1920x1080`, node `89:124`
-- State frame: `State_03_Planning_ContinuationCancelled_1920x1080`, node `89:288`
-- State frame: `State_04_LockedWaiting_Readonly_1920x1080`, node `89:452`
-- State frame: `State_05_AutopilotPreview_1920x1080`, node `89:583`
-- State frame: `State_06_SidePanelsCollapsed_1920x1080`, node `89:725`
-- Component page: `UI_MainFrame_Components_v0.9`, node `89:822`
-- Component library frame: `ComponentLibrary_FilledSpec_v0.9`, node `93:2`
-- Flow page: `UI_MainFrame_Flows_v0.9`, node `89:937`
-- Flow detail frame: `Flow_DetailFill_v0.9`, node `96:2`
+- Current main UI index page: `UI_MainFrame_v2.3_CalendarPreinput`, node `345:2818`
+- Current main UI frame: `Main_1920x1080_N1_NormalQueue_v2.3`, node `345:2819`
+- Current Figma trace / resource gate frame: `Resource_Gate_And_DocTrace_v2.3`, node `345:3060`
+- Previous v0.9 main UI page, retained as old reference only: `UI_MainFrame_Rebuild_v0.9`, node `89:2`
+- Previous v0.9 state frame: `State_01_Prepare_InfoProcessing_1920x1080`, node `89:3`
+- Previous v0.9 state frame: `State_02_Planning_WithContinuation_1920x1080`, node `89:124`
+- Previous v0.9 state frame: `State_03_Planning_ContinuationCancelled_1920x1080`, node `89:288`
+- Previous v0.9 state frame: `State_04_LockedWaiting_Readonly_1920x1080`, node `89:452`
+- Previous v0.9 state frame: `State_05_AutopilotPreview_1920x1080`, node `89:583`
+- Previous v0.9 state frame: `State_06_SidePanelsCollapsed_1920x1080`, node `89:725`
+- Previous v0.9 component page, do not use as current main UI basis unless explicitly requested: `UI_MainFrame_Components_v0.9`, node `89:822`
+- Previous v0.9 component library frame: `ComponentLibrary_FilledSpec_v0.9`, node `93:2`
+- Previous v0.9 flow page: `UI_MainFrame_Flows_v0.9`, node `89:937`
+- Previous v0.9 flow detail frame: `Flow_DetailFill_v0.9`, node `96:2`
 - Archived old page: `[archived]UI_TurnStart_InfoProcessing_v0.1`, node `1:2`
 
-The current Figma artifact is the v0.9 rebuild of the large-world-map-driven turn action workbench. It contains six main UI state frames covering preparation, planning with continuation, planning after continuation cancellation, locked waiting, autopilot preview, and side-panel-collapsed layouts. Each state frame uses `MapViewport_FullWidth` for the map surface; node-level map connectivity is represented by `Map_RouteConnectivity_Essential_v0.9`, keeping only known passable routes, selected plan routes, and rumor / hidden routes as visible connection types.
+The current Figma index page is the v2.3 calendar-preinput main UI page. It is based on `docs/inbox/修仙轮回沙盒_设计文档包_v2.3/04_UIUX与界面规范/01_UIUX需求方案_v2.3.md` and represents the shared-calendar action workbench: top world calendar / speed / character summary, large world map as first-view subject, right node context / log panel, and bottom current command + up to 3 preinput commands + fallback rule + explicit autopilot preview entry.
+
+The v0.9 rebuild pages and components are retained for traceability only. They are no longer the current Figma main UI layout basis and should not be reused for new v2.3 main-interface composition unless the user explicitly requests comparison or migration work.
 
 Subscribed libraries observed in the file include Material 3 Design Kit, Simple Design System, and Apple platform UI kits. Do not assume these are the project's own design system unless a specific Figma node uses them.
 

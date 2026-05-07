@@ -11,6 +11,18 @@ const ResultPackageMerger = preload("res://scripts/core/result_package_merger.gd
 const SaveManager = preload("res://scripts/core/save_manager.gd")
 const MapGraphView = preload("res://scripts/ui/map_graph_view.gd")
 
+const CULTIVATION_NEXT_STAGE = {
+	"A-1": "A-2",
+	"A-2": "A-3",
+	"A-3": "B-1"
+}
+const CULTIVATION_PROGRESS_REQUIRED = {
+	"A-1": 60.0,
+	"A-2": 120.0,
+	"A-3": 180.0
+}
+const METHOD_MASTERY_LEVEL_2_REQUIRED := 72.0
+
 var content := {}
 var runtime := {}
 
@@ -37,6 +49,8 @@ var request_stability_button: Button
 var gather_resource_button: Button
 var prepare_breakthrough_button: Button
 var attempt_breakthrough_button: Button
+var settlement_dialog: AcceptDialog
+var settlement_dialog_text: RichTextLabel
 var selected_node_id := ""
 
 func _ready() -> void:
@@ -210,6 +224,19 @@ func _build_ui() -> void:
 	var lower_split_5 := _make_nested_split(lower_split_4, 230)
 	report_text = _make_panel(lower_split_5, "回合报告")
 	debug_log_text = _make_panel(lower_split_5, "Debug")
+	_build_settlement_dialog()
+
+func _build_settlement_dialog() -> void:
+	settlement_dialog = AcceptDialog.new()
+	settlement_dialog.title = "结算结果"
+	add_child(settlement_dialog)
+	settlement_dialog_text = RichTextLabel.new()
+	settlement_dialog_text.bbcode_enabled = false
+	settlement_dialog_text.fit_content = false
+	settlement_dialog_text.scroll_active = true
+	settlement_dialog_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	settlement_dialog_text.custom_minimum_size = Vector2(720, 500)
+	settlement_dialog.add_child(settlement_dialog_text)
 
 func _make_panel(parent: Node, title: String) -> RichTextLabel:
 	var panel := PanelContainer.new()
@@ -396,6 +423,7 @@ func _on_lock_and_settle_pressed() -> void:
 			"payload": {"save": save_result, "replay": replay_result}
 		})
 	_refresh()
+	_show_settlement_result_popup(settlement_result)
 
 func _on_save_pressed() -> void:
 	var result := SaveManager.save_game(runtime)
@@ -412,6 +440,76 @@ func _on_load_pressed() -> void:
 	else:
 		validation_label.text = "读取失败：%s" % result["error"]
 	_refresh()
+
+func _show_settlement_result_popup(settlement_result: Dictionary) -> void:
+	if settlement_dialog == null or settlement_dialog_text == null:
+		return
+	settlement_dialog_text.text = _format_settlement_popup(settlement_result)
+	settlement_dialog.popup_centered(Vector2i(760, 560))
+
+func _format_settlement_popup(settlement_result: Dictionary) -> String:
+	if not bool(settlement_result.get("ok", false)):
+		var errors: Array = settlement_result.get("validation", {}).get("errors", [])
+		return "结算未完成。\n\n硬校验：\n- %s" % "\n- ".join(errors)
+
+	var replay: Dictionary = settlement_result.get("turn_replay", {})
+	var before: Dictionary = replay.get("state_before", {})
+	var after: Dictionary = replay.get("state_after", {})
+	var report: Dictionary = runtime.get("last_report", {})
+	var lines := [
+		"第 %s 回合结算完成" % str(report.get("turn_id", "")),
+		"时间：第 %s 天 / h%s -> 第 %s 天 / h%s" % [
+			str(before.get("current_world_day", "")),
+			str(before.get("current_world_hour", "")),
+			str(runtime.get("room_state", {}).get("current_world_day", "")),
+			str(after.get("current_world_hour", ""))
+		],
+		"预算：%sh，实际结算：%sh" % [str(report.get("turn_total_hours", "")), str(report.get("consumed_hours", ""))],
+		"",
+		"行动结果:"
+	]
+	for item in report.get("actual_actions", []):
+		var line := "- %s：%s，%sh" % [str(item.get("action_id", "")), str(item.get("status", "")), str(item.get("actual_consumed_hours", ""))]
+		if item.has("cultivation_progress_delta"):
+			line += "，修为 +%.1f，阶段 %s" % [float(item.get("cultivation_progress_delta", 0.0)), str(item.get("stage_after", ""))]
+		if item.has("cultivation_event"):
+			line += "，事件 %s" % str(item.get("cultivation_event", {}).get("display_name", ""))
+		if item.has("breakthrough_result"):
+			line += "，突破 %s" % str(item.get("breakthrough_result", ""))
+		if str(item.get("skip_or_interrupt_reason", "")) != "":
+			line += "，原因 %s" % str(item.get("skip_or_interrupt_reason", ""))
+		lines.append(line)
+	if report.get("actual_actions", []).is_empty():
+		lines.append("- 无")
+
+	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
+	lines.append("")
+	lines.append("当前成长:")
+	lines.append("- %s" % _format_cultivation_progress(character.get("cultivation", {})))
+	var active_count := 0
+	for effect_id in character.get("active_resource_effect_refs", []):
+		var effect: Dictionary = runtime.get("active_resource_effects", {}).get(str(effect_id), {})
+		if str(effect.get("state", "active")) != "exhausted" and float(effect.get("remaining_effect_hours", 0.0)) > 0.0:
+			active_count += 1
+	lines.append("- 残余药性：%d 个仍可承接" % active_count)
+
+	if not report.get("breakthrough_outcomes", []).is_empty():
+		lines.append("")
+		lines.append("突破链:")
+		for outcome in report.get("breakthrough_outcomes", []):
+			lines.append("- %s：%s -> %s，score=%s，fail=%s" % [
+				str(outcome.get("result", "")),
+				str(outcome.get("stage_before", "")),
+				str(outcome.get("stage_after", "")),
+				str(outcome.get("score", "")),
+				str(outcome.get("fail_reason_tags", []))
+			])
+
+	lines.append("")
+	lines.append("备注:")
+	for note in report.get("notes", []):
+		lines.append("- %s" % str(note))
+	return "\n".join(lines)
 
 func _refresh() -> void:
 	if runtime.is_empty():
@@ -542,7 +640,7 @@ func _format_character_panel() -> String:
 	var lines := [
 		"%s | 位置：%s" % [character.get("current_name", ""), _node_display_name(str(character.get("current_location", "")))],
 		"身份：%s / %s" % [str(character.get("sect_identity", {}).get("sect_id", "none")), str(character.get("sect_identity", {}).get("rank", "none"))],
-		"境界：%s | 修为 %.1f | 瓶颈：%s" % [str(cultivation.get("current_stage_code", "")), float(cultivation.get("cultivation_progress", 0.0)), str(cultivation.get("bottleneck_state", ""))],
+		_format_cultivation_progress(cultivation),
 		"主修：%s" % str(cultivation.get("main_dao_method_ref", "")),
 		"体魄 %s / 精力 %s | 生机 %.0f/%.0f 元气 %.0f/%.0f 神念 %.0f/%.0f" % [
 			str(character.get("base_attributes", {}).get("base_physique", "")),
@@ -566,11 +664,11 @@ func _format_character_panel() -> String:
 	if runtime.get("method_states", {}).is_empty():
 		lines.append("- 无")
 	for method_state in runtime.get("method_states", {}).values():
-		lines.append("- %s mastery=%s cap=%s exp=%.1f" % [
+		lines.append("- %s mastery=%s cap=%s %s" % [
 			str(method_state.get("template_id", "")),
 			str(method_state.get("mastery_level", "")),
 			str(method_state.get("current_effective_cap_stage", "")),
-			float(method_state.get("mastery_exp", 0.0))
+			_format_method_mastery_progress(method_state)
 		])
 	lines.append("")
 	lines.append("背包:")
@@ -587,10 +685,11 @@ func _format_character_panel() -> String:
 	lines.append("ActiveResourceEffect:")
 	for effect_id in character.get("active_resource_effect_refs", []):
 		var effect: Dictionary = runtime.get("active_resource_effects", {}).get(str(effect_id), {})
-		lines.append("- %s remaining=%.1fh channel=%s" % [
+		lines.append("- %s remaining=%.1fh channel=%s state=%s" % [
 			str(effect.get("source_resource_ref", effect_id)),
 			float(effect.get("remaining_effect_hours", 0.0)),
-			str(effect.get("effect_channel", ""))
+			str(effect.get("effect_channel", "")),
+			str(effect.get("state", "active"))
 		])
 	if character.get("active_resource_effect_refs", []).is_empty():
 		lines.append("- 无")
@@ -599,6 +698,23 @@ func _format_character_panel() -> String:
 	for line in _breakthrough_panel_lines():
 		lines.append(line)
 	return "\n".join(lines)
+
+func _format_cultivation_progress(cultivation: Dictionary) -> String:
+	var stage := str(cultivation.get("current_stage_code", ""))
+	var progress := float(cultivation.get("cultivation_progress", 0.0))
+	var required := _stage_progress_required(stage)
+	var next_stage := _next_stage_code(stage)
+	var bottleneck := str(cultivation.get("bottleneck_state", ""))
+	if required > 0.0 and next_stage != "":
+		return "境界：%s | 修为 %.1f / %.1f -> %s | 瓶颈：%s" % [stage, progress, required, next_stage, bottleneck]
+	return "境界：%s | 修为 %.1f | 下一步：未开放 | 瓶颈：%s" % [stage, progress, bottleneck]
+
+func _format_method_mastery_progress(method_state: Dictionary) -> String:
+	var mastery_exp := float(method_state.get("mastery_exp", 0.0))
+	var cap_stage := str(method_state.get("current_effective_cap_stage", ""))
+	if cap_stage == "A-3":
+		return "exp=%.1f / 已达 A-3 有效上限" % mastery_exp
+	return "exp=%.1f / %.1f -> cap A-3" % [mastery_exp, METHOD_MASTERY_LEVEL_2_REQUIRED]
 
 func _format_sect_panel() -> String:
 	var sect: Dictionary = runtime.get("sect_states", {}).get("sect_yunlu", {})
@@ -670,9 +786,18 @@ func _format_report(report: Dictionary) -> String:
 	for item in report.get("actual_actions", []):
 		var extra := ""
 		if item.has("cultivation_progress_delta"):
-			extra = " gain=%.1f stage=%s" % [float(item.get("cultivation_progress_delta", 0.0)), str(item.get("stage_after", ""))]
+			extra = " gain=%.1f stage=%s next=%s/%.1f" % [
+				float(item.get("cultivation_progress_delta", 0.0)),
+				str(item.get("stage_after", "")),
+				str(item.get("next_stage_code", "")),
+				float(item.get("next_stage_progress_required", 0.0))
+			]
+		if item.has("continued_resource_bonus") and not item.get("continued_resource_bonus", {}).get("continued_effects", []).is_empty():
+			extra += " continued=%.1f" % float(item.get("continued_resource_bonus", {}).get("cultivation_progress_bonus", 0.0))
 		if item.has("resource_bonus") and int(item.get("resource_bonus", {}).get("residual_effect_hours", 0)) > 0:
 			extra += " residual=%sh" % str(item.get("resource_bonus", {}).get("residual_effect_hours", 0))
+		if item.has("cultivation_event"):
+			extra += " event=%s" % str(item.get("cultivation_event", {}).get("event_id", ""))
 		if item.has("method_state_id"):
 			extra += " method=%s" % str(item.get("method_state_id", ""))
 		if item.has("breakthrough_result"):
@@ -841,9 +966,11 @@ func _breakthrough_panel_lines() -> Array:
 	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
 	var cultivation: Dictionary = character.get("cultivation", {})
 	var lines := [
-		"状态：%s / progress %.1f / bottleneck=%s" % [
+		"状态：%s / progress %.1f / %.1f -> %s / bottleneck=%s" % [
 			str(cultivation.get("current_stage_code", "")),
 			float(cultivation.get("cultivation_progress", 0.0)),
+			_stage_progress_required(str(cultivation.get("current_stage_code", ""))),
+			_next_stage_code(str(cultivation.get("current_stage_code", ""))),
 			str(cultivation.get("bottleneck_state", ""))
 		],
 		"主修缺口：%s" % str(_breakthrough_gap_refs()),
@@ -872,7 +999,7 @@ func _breakthrough_gap_refs() -> Array:
 	var gaps := []
 	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
 	var cultivation: Dictionary = character.get("cultivation", {})
-	if str(cultivation.get("current_stage_code", "")) != "A-2" or float(cultivation.get("cultivation_progress", 0.0)) < 120.0:
+	if str(cultivation.get("current_stage_code", "")) != "A-3" or float(cultivation.get("cultivation_progress", 0.0)) < _stage_progress_required("A-3"):
 		gaps.append("demo_bottleneck_not_reached")
 	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
 		gaps.append("breakthrough_required_state_missing")
@@ -892,7 +1019,7 @@ func _breakthrough_gap_refs() -> Array:
 func _is_bottleneck_reached() -> bool:
 	var character: Dictionary = runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {})
 	var cultivation: Dictionary = character.get("cultivation", {})
-	return str(cultivation.get("current_stage_code", "")) == "A-2" and float(cultivation.get("cultivation_progress", 0.0)) >= 120.0 and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
+	return str(cultivation.get("current_stage_code", "")) == "A-3" and float(cultivation.get("cultivation_progress", 0.0)) >= _stage_progress_required("A-3") and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
 
 func _can_attempt_breakthrough() -> bool:
 	return _breakthrough_gap_refs().is_empty()
@@ -910,3 +1037,9 @@ func _has_available_item_instance(item_template_id: String) -> bool:
 
 func _has_breakthrough_support() -> bool:
 	return runtime.get("incarnations", {}).get(DemoConstants.LOCAL_CHARACTER_ID, {}).get("sect_identity", {}).get("special_authorizations", []).has("demo_breakthrough_support")
+
+func _next_stage_code(stage_code: String) -> String:
+	return str(CULTIVATION_NEXT_STAGE.get(stage_code, ""))
+
+func _stage_progress_required(stage_code: String) -> float:
+	return float(CULTIVATION_PROGRESS_REQUIRED.get(stage_code, 0.0))

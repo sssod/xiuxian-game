@@ -53,6 +53,32 @@
 		"rumor_text": "云麓宗收下新入门外门弟子，并发下入门道功与一枚清灵丹。"
 	},
 	{
+		"id": "cultivation_clear_breath",
+		"display_name": "气息清明",
+		"phase": "C",
+		"trigger_scope": "active_cultivation_random",
+		"trigger_node_id": "",
+		"trigger_chance_percent": 30,
+		"event_weight": 3,
+		"result_package_policy": "event_outputs_delta_only",
+		"cultivation_progress_delta": 8.0,
+		"bar_deltas": {"bar_qi_current": 6.0},
+		"result_text": "吐纳渐入清明，灵气周转更顺，额外推进少量修为。"
+	},
+	{
+		"id": "cultivation_meridian_stutter",
+		"display_name": "经脉滞涩",
+		"phase": "C",
+		"trigger_scope": "active_cultivation_random",
+		"trigger_node_id": "",
+		"trigger_chance_percent": 20,
+		"event_weight": 2,
+		"result_package_policy": "event_outputs_delta_only",
+		"cultivation_progress_delta": -6.0,
+		"bar_deltas": {"bar_mind_current": -4.0},
+		"result_text": "一段气机在经脉中滞涩，本次吐纳收益降低，并轻微消耗神念。"
+	},
+	{
 		"id": "breakthrough_preparation_shortage",
 		"display_name": "破境准备清点",
 		"phase": "E",

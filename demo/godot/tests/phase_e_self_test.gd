@@ -99,8 +99,13 @@ func _make_breakthrough_ready_runtime(content: Dictionary, failures: Array) -> D
 	], failures, "cultivate_to_A2")
 	_settle_queue(runtime, content, [
 		PersonalActionInstruction.make_active_cultivation(DemoConstants.LOCAL_CHARACTER_ID, 1, "node_outer_sect_room", 120, false)
-	], failures, "cultivate_to_bottleneck")
+	], failures, "cultivate_to_A3")
+	_settle_queue(runtime, content, [
+		PersonalActionInstruction.make_active_cultivation(DemoConstants.LOCAL_CHARACTER_ID, 1, "node_outer_sect_room", 120, false)
+	], failures, "cultivate_to_A3_bottleneck")
 	var cultivation: Dictionary = _character(runtime).get("cultivation", {})
+	if str(cultivation.get("current_stage_code", "")) != "A-3":
+		failures.append("Expected demo bottleneck stage A-3 before preparation, got %s." % str(cultivation.get("current_stage_code", "")))
 	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
 		failures.append("Expected demo bottleneck before preparation, got %s." % str(cultivation.get("bottleneck_state", "")))
 	_settle_queue(runtime, content, [

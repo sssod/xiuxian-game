@@ -6,6 +6,22 @@ const ActionValidator = preload("res://scripts/core/action_validator.gd")
 const ContentLoader = preload("res://scripts/core/content_loader.gd")
 const LogUtils = preload("res://scripts/core/log_utils.gd")
 
+const CULTIVATION_NEXT_STAGE = {
+	"A-1": "A-2",
+	"A-2": "A-3",
+	"A-3": "B-1"
+}
+const CULTIVATION_PROGRESS_REQUIRED = {
+	"A-1": 60.0,
+	"A-2": 120.0,
+	"A-3": 180.0
+}
+const CULTIVATION_STAGE_OVERFLOW_CAP = {
+	"A-1": 40.0,
+	"A-2": 60.0
+}
+const METHOD_MASTERY_LEVEL_2_REQUIRED := 72.0
+
 static func settle_turn(runtime: Dictionary, content: Dictionary, player_id := DemoConstants.LOCAL_PLAYER_ID) -> Dictionary:
 	var room_state: Dictionary = runtime.get("room_state", {})
 	var turn_id := int(room_state.get("current_turn_id", 1))
@@ -605,7 +621,7 @@ static func _settle_study_method_action(runtime: Dictionary, content: Dictionary
 	var gained_exp: float = float(consumed_hours) * (1.0 + float(comprehension) * 0.03)
 	var mastery_exp: float = float(current_state.get("mastery_exp", 0.0)) + gained_exp
 	var mastery_level: int = int(max(1, int(current_state.get("mastery_level", 0))))
-	if mastery_exp >= 72.0:
+	if mastery_exp >= METHOD_MASTERY_LEVEL_2_REQUIRED:
 		mastery_level = 2
 	var effective_cap := _method_effective_cap(carrier_template, mastery_level)
 	method_state_deltas[method_state_id] = {
@@ -678,21 +694,45 @@ static func _settle_active_cultivation_action(runtime: Dictionary, content: Dict
 	var aptitude_multiplier: float = 1.0 + float(aptitude.get("aptitude_root", 0)) * 0.02 + float(aptitude.get("aptitude_bone", 0)) * 0.01
 	var mastery_multiplier: float = 1.0 + float(mastery_level) * 0.15
 	var base_gain: float = float(consumed_hours) * base_per_hour * aura_multiplier * aptitude_multiplier * mastery_multiplier
-	var resource_bonus: Dictionary = _consume_action_resource_inputs(runtime, content, action, actor_id, turn_id, world_day, cursor_world_hour, ended_hour, consumed_hours, item_stack_deltas, active_resource_effect_deltas, asset_log_entries, character_deltas)
-	var total_gain: float = base_gain + float(resource_bonus.get("cultivation_progress_bonus", 0.0))
+	var continued_bonus: Dictionary = _apply_compatible_active_resource_effects(runtime, content, action, actor_id, ended_hour, consumed_hours, active_resource_effect_deltas, character_deltas)
+	var new_resource_bonus: Dictionary = _consume_action_resource_inputs(runtime, content, action, actor_id, turn_id, world_day, cursor_world_hour, ended_hour, consumed_hours, item_stack_deltas, active_resource_effect_deltas, asset_log_entries, character_deltas)
+	var cultivation_event: Dictionary = _select_cultivation_random_event(runtime, content, action, turn_id, cursor_world_hour, ended_hour)
+	var event_gain := float(cultivation_event.get("cultivation_progress_delta", 0.0))
+	var total_gain: float = max(0.0, base_gain + float(continued_bonus.get("cultivation_progress_bonus", 0.0)) + float(new_resource_bonus.get("cultivation_progress_bonus", 0.0)) + event_gain)
 	var cultivation_result: Dictionary = _apply_cultivation_gain(cultivation, method_state, total_gain)
-	_set_character_delta(character_deltas, actor_id, {"cultivation": cultivation_result["cultivation"]})
+	var character_delta := {"cultivation": cultivation_result["cultivation"]}
+	if not cultivation_event.is_empty():
+		var bars: Dictionary = character.get("derived_bars", {}).duplicate(true)
+		for key in cultivation_event.get("bar_deltas", {}).keys():
+			bars[key] = max(0.0, float(bars.get(key, 0.0)) + float(cultivation_event["bar_deltas"][key]))
+		character_delta["derived_bars"] = bars
+	_set_character_delta(character_deltas, actor_id, character_delta)
 	character_log_entries.append(LogUtils.visible("active_cultivation", "主动吐纳%d小时，修为增长%.1f。" % [consumed_hours, total_gain], turn_id, world_day, ended_hour))
 
 	var stage_note := ""
 	if cultivation_result["stage_up"]:
 		stage_note = " 小阶段提升至%s。" % cultivation_result["cultivation"].get("current_stage_code", "")
 	visible_logs.append(LogUtils.visible("active_cultivation", "主动吐纳%d小时，修为增长%.1f。%s" % [consumed_hours, total_gain, stage_note], turn_id, world_day, ended_hour))
-	if int(resource_bonus.get("residual_effect_hours", 0)) > 0:
-		visible_logs.append(LogUtils.visible("resource_residual_created", "清灵丹剩余药性%d小时，已写入 ActiveResourceEffect。" % int(resource_bonus["residual_effect_hours"]), turn_id, world_day, ended_hour))
+	if not continued_bonus.get("continued_effects", []).is_empty():
+		visible_logs.append(LogUtils.visible("resource_residual_continued", "承接残余药性，额外修为增长%.1f。" % float(continued_bonus.get("cultivation_progress_bonus", 0.0)), turn_id, world_day, ended_hour))
+	if int(new_resource_bonus.get("residual_effect_hours", 0)) > 0:
+		visible_logs.append(LogUtils.visible("resource_residual_created", "清灵丹剩余药性%d小时，已写入 ActiveResourceEffect。" % int(new_resource_bonus["residual_effect_hours"]), turn_id, world_day, ended_hour))
+	if not cultivation_event.is_empty():
+		visible_logs.append(LogUtils.visible("cultivation_random_event", "%s：%s" % [cultivation_event.get("display_name", "修炼事件"), cultivation_event.get("result_text", "修炼中出现变化。")], turn_id, world_day, ended_hour))
 	actual_entry["cultivation_progress_delta"] = total_gain
-	actual_entry["resource_bonus"] = resource_bonus
+	actual_entry["base_cultivation_gain"] = base_gain
+	actual_entry["continued_resource_bonus"] = continued_bonus
+	actual_entry["resource_bonus"] = new_resource_bonus
+	if not cultivation_event.is_empty():
+		actual_entry["cultivation_event"] = {
+			"event_id": cultivation_event.get("id", ""),
+			"display_name": cultivation_event.get("display_name", ""),
+			"cultivation_progress_delta": event_gain,
+			"bar_deltas": cultivation_event.get("bar_deltas", {})
+		}
 	actual_entry["stage_after"] = cultivation_result["cultivation"].get("current_stage_code", "")
+	actual_entry["next_stage_code"] = cultivation_result["cultivation"].get("progress_cap_context", {}).get("next_stage_code", "")
+	actual_entry["next_stage_progress_required"] = cultivation_result["cultivation"].get("progress_cap_context", {}).get("next_stage_progress_required", 0.0)
 	return {
 		"remaining_hours": remaining_hours - consumed_hours,
 		"cursor_world_hour": ended_hour,
@@ -1159,7 +1199,7 @@ static func _breakthrough_gap_refs(runtime: Dictionary, character_deltas: Dictio
 	var gaps := []
 	var character := _character_with_deltas(runtime, character_deltas, actor_id)
 	var cultivation: Dictionary = character.get("cultivation", {})
-	if str(cultivation.get("current_stage_code", "")) != "A-2" or float(cultivation.get("cultivation_progress", 0.0)) < 120.0:
+	if str(cultivation.get("current_stage_code", "")) != "A-3" or float(cultivation.get("cultivation_progress", 0.0)) < _stage_progress_required("A-3"):
 		gaps.append("demo_bottleneck_not_reached")
 	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
 		gaps.append("breakthrough_required_state_missing")
@@ -1219,7 +1259,7 @@ static func _resolve_breakthrough_outcome(runtime: Dictionary, content: Dictiona
 	var score := 0
 	var fail_tags := []
 
-	if str(cultivation.get("current_stage_code", "")) == "A-2" and float(cultivation.get("cultivation_progress", 0.0)) >= 120.0 and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required":
+	if str(cultivation.get("current_stage_code", "")) == "A-3" and float(cultivation.get("cultivation_progress", 0.0)) >= _stage_progress_required("A-3") and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required":
 		score += 2
 	else:
 		_append_unique(fail_tags, "foundation_unstable")
@@ -1267,7 +1307,7 @@ static func _resolve_breakthrough_outcome(runtime: Dictionary, content: Dictiona
 	var success_threshold := int(event.get("success_threshold", 7))
 	var survive_threshold := int(event.get("survive_threshold", 4))
 	var result := "severe_injury_interrupted"
-	var stage_after := str(cultivation.get("current_stage_code", "A-2"))
+	var stage_after := str(cultivation.get("current_stage_code", "A-3"))
 	if score >= success_threshold:
 		result = "success"
 		stage_after = str(event.get("success_stage_code", "B-1"))
@@ -1312,11 +1352,22 @@ static func _apply_breakthrough_outcome(runtime: Dictionary, content: Dictionary
 			"suggested_actions": ["continue_play"]
 		}
 	else:
-		cultivation["current_stage_code"] = "A-2"
-		cultivation["cultivation_progress"] = 100.0
-		cultivation["bottleneck_state"] = "breakthrough_required"
+		cultivation["current_stage_code"] = "A-3"
+		cultivation["cultivation_progress"] = _stage_progress_required("A-3") - 20.0
+		cultivation["bottleneck_state"] = "none"
+		cultivation["progress_cap_context"] = {
+			"cap_source": "breakthrough_backlash",
+			"theoretical_max_cap_stage": "A-3",
+			"current_effective_cap_stage": "A-3",
+			"current_stage_progress_required": _stage_progress_required("A-3"),
+			"next_stage_code": "B-1",
+			"next_stage_progress_required": _stage_progress_required("A-3"),
+			"required_mastery_level": 2,
+			"missing_condition_refs": ["recover_and_rebuild_bottleneck"],
+			"suggested_actions": ["active_cultivation", "prepare_breakthrough"]
+		}
 		if result == "severe_injury_interrupted":
-			cultivation["cultivation_progress"] = 80.0
+			cultivation["cultivation_progress"] = _stage_progress_required("A-3") - 60.0
 			injuries.append({
 				"condition_id": "severe_meridian_backlash_t%03d" % turn_id,
 				"condition_kind": "breakthrough_backlash",
@@ -1375,7 +1426,7 @@ static func _apply_breakthrough_outcome(runtime: Dictionary, content: Dictionary
 	demo_summary_delta["breakthrough_result"] = result
 	demo_summary_delta["continue_play_enabled"] = true
 	demo_summary_delta["key_experiences"] = [
-		"达到 A-2 demo 瓶颈",
+		"达到 A-3 demo 大境界瓶颈",
 		"创建并消耗关键突破物实例",
 		"执行 breakthrough_chain_basic 事件链",
 		"结果写入角色日志、宗门摘要、轮回账本占位与回合报告"
@@ -1573,11 +1624,120 @@ static func _resource_bindings(action: Dictionary) -> Array:
 		return action.get("resource_bindings", [])
 	return action.get("resource_inputs", [])
 
+static func _apply_compatible_active_resource_effects(runtime: Dictionary, content: Dictionary, action: Dictionary, actor_id: String, ended_world_hour: int, consumed_hours: int, active_resource_effect_deltas: Dictionary, character_deltas: Dictionary) -> Dictionary:
+	var result := {
+		"cultivation_progress_bonus": 0.0,
+		"continued_effects": []
+	}
+	if consumed_hours <= 0:
+		return result
+
+	var character := _character_with_deltas(runtime, character_deltas, actor_id)
+	for effect_ref in character.get("active_resource_effect_refs", []):
+		var effect_id := str(effect_ref)
+		var effect := _active_resource_effect_with_deltas(runtime, active_resource_effect_deltas, effect_id)
+		if effect.is_empty() or str(effect.get("state", "active")) == "exhausted":
+			continue
+		if not _active_effect_matches_action(effect, action):
+			continue
+
+		var remaining_hours := float(effect.get("remaining_effect_hours", 0.0))
+		if remaining_hours <= 0.0:
+			var exhausted := effect.duplicate(true)
+			exhausted["state"] = "exhausted"
+			exhausted["remaining_effect_hours"] = 0.0
+			exhausted["remaining_effect_amount"] = 0.0
+			active_resource_effect_deltas[effect_id] = exhausted
+			continue
+
+		var applied_hours: float = min(float(consumed_hours), remaining_hours)
+		var resource_ref := str(effect.get("source_resource_ref", ""))
+		var template := ContentLoader.item_template(content, resource_ref)
+		var unit_effect := float(template.get("unit_effect_per_hour", 0.0))
+		if unit_effect <= 0.0 and remaining_hours > 0.0:
+			unit_effect = float(effect.get("remaining_effect_amount", 0.0)) / remaining_hours
+		var bonus := unit_effect * applied_hours
+
+		var next_effect := effect.duplicate(true)
+		next_effect["remaining_effect_hours"] = max(0.0, remaining_hours - applied_hours)
+		next_effect["remaining_effect_amount"] = max(0.0, float(effect.get("remaining_effect_amount", 0.0)) - bonus)
+		next_effect["last_settled_world_hour"] = ended_world_hour
+		next_effect["state"] = "exhausted" if float(next_effect["remaining_effect_hours"]) <= 0.0 else "active"
+		active_resource_effect_deltas[effect_id] = next_effect
+
+		result["cultivation_progress_bonus"] = float(result["cultivation_progress_bonus"]) + bonus
+		result["continued_effects"].append({
+			"effect_id": effect_id,
+			"source_resource_ref": resource_ref,
+			"applied_hours": applied_hours,
+			"bonus": bonus,
+			"remaining_effect_hours": next_effect["remaining_effect_hours"],
+			"state": next_effect["state"]
+		})
+	return result
+
+static func _active_resource_effect_with_deltas(runtime: Dictionary, active_resource_effect_deltas: Dictionary, effect_id: String) -> Dictionary:
+	if active_resource_effect_deltas.has(effect_id):
+		return active_resource_effect_deltas[effect_id].duplicate(true)
+	return runtime.get("active_resource_effects", {}).get(effect_id, {}).duplicate(true)
+
+static func _active_effect_matches_action(effect: Dictionary, action: Dictionary) -> bool:
+	if str(effect.get("effect_channel", "")) != "cultivation_aura":
+		return false
+	var action_id := str(action.get("action_id", ""))
+	for tag in effect.get("compatible_action_tags", []):
+		if str(tag) == action_id:
+			return true
+	return false
+
+static func _select_cultivation_random_event(runtime: Dictionary, content: Dictionary, action: Dictionary, turn_id: int, started_world_hour: int, ended_world_hour: int) -> Dictionary:
+	var candidates := []
+	var total_weight := 0
+	var node_id := _target_node(action)
+	for event in content.get("tables", {}).get("events", {}).values():
+		if str(event.get("trigger_scope", "")) != "active_cultivation_random":
+			continue
+		var trigger_node_id := str(event.get("trigger_node_id", ""))
+		if trigger_node_id != "" and trigger_node_id != node_id:
+			continue
+		var node_state: Dictionary = runtime.get("node_states", {}).get(node_id, {})
+		var has_required_tags := true
+		for tag in event.get("required_node_state_tags", []):
+			if not node_state.get("state_tags", []).has(tag):
+				has_required_tags = false
+				break
+		if not has_required_tags:
+			continue
+		var chance := int(event.get("trigger_chance_percent", 35))
+		var gate_seed := "%s:%s:%s:%s:%s" % [runtime.get("room_state", {}).get("world_seed", ""), turn_id, started_world_hour, ended_world_hour, event.get("id", "")]
+		if _deterministic_roll(gate_seed, 100) >= chance:
+			continue
+		var weight: int = max(1, int(event.get("event_weight", 1)))
+		total_weight += weight
+		candidates.append({"event": event, "weight": weight})
+	if candidates.is_empty() or total_weight <= 0:
+		return {}
+
+	var pick_seed := "%s:%s:%s:%s" % [runtime.get("room_state", {}).get("world_seed", ""), turn_id, ended_world_hour, action.get("instruction_id", "")]
+	var pick := _deterministic_roll(pick_seed, total_weight)
+	var cursor := 0
+	for candidate in candidates:
+		cursor += int(candidate["weight"])
+		if pick < cursor:
+			return candidate["event"].duplicate(true)
+	return candidates[candidates.size() - 1]["event"].duplicate(true)
+
+static func _deterministic_roll(seed_text: String, upper_bound: int) -> int:
+	if upper_bound <= 0:
+		return 0
+	return abs(int(hash(seed_text))) % upper_bound
+
 static func _consume_action_resource_inputs(runtime: Dictionary, content: Dictionary, action: Dictionary, actor_id: String, turn_id: int, world_day: int, started_world_hour: int, ended_world_hour: int, consumed_hours: int, item_stack_deltas: Dictionary, active_resource_effect_deltas: Dictionary, asset_log_entries: Array, character_deltas: Dictionary) -> Dictionary:
 	var result := {
 		"cultivation_progress_bonus": 0.0,
 		"consumed_resources": [],
-		"residual_effect_hours": 0
+		"residual_effect_hours": 0,
+		"residual_effect_refs": []
 	}
 	for binding in _resource_bindings(action):
 		if typeof(binding) != TYPE_DICTIONARY:
@@ -1621,7 +1781,7 @@ static func _consume_action_resource_inputs(runtime: Dictionary, content: Dictio
 
 		var residual_hours: int = int(max(0, max_effective_hours - compatible_hours))
 		if residual_hours > 0:
-			var effect_id := "effect_%s_%s_t%03d_h%06d" % [resource_ref, actor_id, turn_id, ended_world_hour]
+			var effect_id := _new_resource_effect_id(runtime, active_resource_effect_deltas, resource_ref, actor_id, str(binding.get("binding_id", action.get("instruction_id", ""))), turn_id, ended_world_hour)
 			active_resource_effect_deltas[effect_id] = {
 				"effect_id": effect_id,
 				"owner_character_id": actor_id,
@@ -1643,6 +1803,7 @@ static func _consume_action_resource_inputs(runtime: Dictionary, content: Dictio
 			}
 			_append_character_array(runtime, character_deltas, actor_id, "active_resource_effect_refs", [effect_id])
 			result["residual_effect_hours"] = int(result["residual_effect_hours"]) + residual_hours
+			result["residual_effect_refs"].append(effect_id)
 	return result
 
 static func _apply_cultivation_gain(cultivation: Dictionary, method_state: Dictionary, gain: float) -> Dictionary:
@@ -1651,18 +1812,24 @@ static func _apply_cultivation_gain(cultivation: Dictionary, method_state: Dicti
 	var progress := float(next_cultivation.get("cultivation_progress", 0.0)) + gain
 	var effective_cap := str(method_state.get("current_effective_cap_stage", "A-1"))
 	var stage_up := false
+	var stage_before := stage
 
-	if stage == "A-1":
-		if progress >= 60.0 and _stage_allows(effective_cap, "A-2"):
-			stage = "A-2"
-			progress = min(progress - 60.0, 40.0)
-			stage_up = true
-		elif progress >= 60.0:
-			progress = 60.0
-			next_cultivation["bottleneck_state"] = "soft_cap"
-	elif stage == "A-2":
-		if progress >= 120.0:
-			progress = 120.0
+	if stage in ["A-1", "A-2"]:
+		var required_progress := _stage_progress_required(stage)
+		var next_stage := _next_stage_code(stage)
+		if progress >= required_progress:
+			if _stage_allows(effective_cap, next_stage):
+				stage = next_stage
+				progress = min(progress - required_progress, _stage_overflow_cap(stage_before))
+				stage_up = true
+				next_cultivation["bottleneck_state"] = "none"
+			else:
+				progress = required_progress
+				next_cultivation["bottleneck_state"] = "soft_cap"
+	elif stage == "A-3":
+		var required_progress := _stage_progress_required(stage)
+		if progress >= required_progress:
+			progress = required_progress
 			next_cultivation["bottleneck_state"] = "breakthrough_required"
 
 	next_cultivation["current_stage_code"] = stage
@@ -1672,14 +1839,36 @@ static func _apply_cultivation_gain(cultivation: Dictionary, method_state: Dicti
 	if not next_cultivation.has("progress_cap_context"):
 		next_cultivation["progress_cap_context"] = {}
 	next_cultivation["progress_cap_context"]["current_effective_cap_stage"] = effective_cap
+	next_cultivation["progress_cap_context"]["current_stage_progress_required"] = _stage_progress_required(stage)
+	next_cultivation["progress_cap_context"]["next_stage_code"] = _next_stage_code(stage)
+	next_cultivation["progress_cap_context"]["next_stage_progress_required"] = _stage_progress_required(stage)
 	if not _stage_allows(effective_cap, stage):
 		next_cultivation["bottleneck_state"] = "soft_cap"
 		next_cultivation["progress_cap_context"]["cap_source"] = "main_dao_method"
 		next_cultivation["progress_cap_context"]["missing_condition_refs"] = ["method_mastery_cap"]
+	elif str(next_cultivation.get("bottleneck_state", "")) == "breakthrough_required":
+		next_cultivation["progress_cap_context"]["cap_source"] = "breakthrough_required"
+		next_cultivation["progress_cap_context"]["missing_condition_refs"] = ["major_breakthrough_required"]
+		next_cultivation["progress_cap_context"]["suggested_actions"] = ["prepare_breakthrough", "attempt_breakthrough"]
+	elif str(next_cultivation.get("bottleneck_state", "")) == "soft_cap":
+		next_cultivation["progress_cap_context"]["cap_source"] = "main_dao_method"
+		next_cultivation["progress_cap_context"]["missing_condition_refs"] = ["method_mastery_cap"]
+		next_cultivation["progress_cap_context"]["suggested_actions"] = ["study_method"]
+	else:
+		next_cultivation["progress_cap_context"]["missing_condition_refs"] = []
 	return {
 		"cultivation": next_cultivation,
 		"stage_up": stage_up
 	}
+
+static func _next_stage_code(stage_code: String) -> String:
+	return str(CULTIVATION_NEXT_STAGE.get(stage_code, ""))
+
+static func _stage_progress_required(stage_code: String) -> float:
+	return float(CULTIVATION_PROGRESS_REQUIRED.get(stage_code, 0.0))
+
+static func _stage_overflow_cap(stage_code: String) -> float:
+	return float(CULTIVATION_STAGE_OVERFLOW_CAP.get(stage_code, 0.0))
 
 static func _stage_allows(cap_stage: String, target_stage: String) -> bool:
 	return _stage_order(cap_stage) >= _stage_order(target_stage)
@@ -1829,6 +2018,15 @@ static func _asset_log(kind: String, actor_id: String, container_id: String, res
 	entry["consumed_hours"] = consumed_hours
 	entry["details"] = details
 	return entry
+
+static func _new_resource_effect_id(runtime: Dictionary, active_resource_effect_deltas: Dictionary, resource_ref: String, actor_id: String, binding_id: String, turn_id: int, world_hour: int) -> String:
+	var base_id := "effect_%s_%s_%s_t%03d_h%06d" % [_safe_id(resource_ref), _safe_id(actor_id), _safe_id(binding_id), turn_id, world_hour]
+	var candidate := base_id
+	var suffix := 2
+	while runtime.get("active_resource_effects", {}).has(candidate) or active_resource_effect_deltas.has(candidate):
+		candidate = "%s_%02d" % [base_id, suffix]
+		suffix += 1
+	return candidate
 
 static func _safe_id(value: String) -> String:
 	var result := value.replace(":", "_")

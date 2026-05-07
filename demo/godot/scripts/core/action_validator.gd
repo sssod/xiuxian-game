@@ -3,6 +3,12 @@ extends RefCounted
 const DemoConstants = preload("res://scripts/core/demo_constants.gd")
 const ContentLoader = preload("res://scripts/core/content_loader.gd")
 
+const CULTIVATION_PROGRESS_REQUIRED = {
+	"A-1": 60.0,
+	"A-2": 120.0,
+	"A-3": 180.0
+}
+
 static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: String, action_queue: Array) -> Dictionary:
 	var errors := []
 	var planned_hours := 0
@@ -10,6 +16,7 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 	var turn_config: Dictionary = room_state.get("turn_config", DemoConstants.default_turn_config())
 	var budget_hours := DemoConstants.turn_total_hours(turn_config)
 	var simulated_locations := {}
+	var resource_reservations := {}
 
 	for index in action_queue.size():
 		var action = action_queue[index]
@@ -47,7 +54,7 @@ static func validate_queue(runtime: Dictionary, content: Dictionary, player_id: 
 				if effect_channel != "" and used_channels.has(effect_channel):
 					errors.append("%s uses more than one resource input for effect_channel=%s." % [action_id, effect_channel])
 				used_channels.append(effect_channel)
-				if not _resource_binding_is_available(runtime, content, actor_id, action_id, binding):
+				if not _resource_binding_is_available(runtime, content, actor_id, action_id, binding, resource_reservations):
 					errors.append("%s resource input is unavailable or invalid: %s." % [action_id, str(binding.get("resource_ref", ""))])
 
 		var target = action.get("target", {})
@@ -153,7 +160,7 @@ static func _resource_bindings(action: Dictionary) -> Array:
 		return action.get("resource_bindings", [])
 	return action.get("resource_inputs", [])
 
-static func _resource_binding_is_available(runtime: Dictionary, content: Dictionary, actor_id: String, action_id: String, binding: Dictionary) -> bool:
+static func _resource_binding_is_available(runtime: Dictionary, content: Dictionary, actor_id: String, action_id: String, binding: Dictionary, resource_reservations: Dictionary) -> bool:
 	var resource_ref := str(binding.get("resource_ref", ""))
 	if resource_ref == "":
 		return false
@@ -164,7 +171,12 @@ static func _resource_binding_is_available(runtime: Dictionary, content: Diction
 		return false
 	var source_container_ref: Dictionary = binding.get("source_container_ref", {})
 	var source_container_id := str(source_container_ref.get("container_id", _inventory_container_id(runtime, actor_id)))
-	return _container_has_stack(runtime, source_container_id, resource_ref, 1)
+	var reservation_key := "%s:%s" % [source_container_id, resource_ref]
+	var reserved_amount := int(resource_reservations.get(reservation_key, 0))
+	if _container_stack_amount(runtime, source_container_id, resource_ref) <= reserved_amount:
+		return false
+	resource_reservations[reservation_key] = reserved_amount + 1
+	return true
 
 static func _has_method_carrier(runtime: Dictionary, actor_id: String, item_template_id: String) -> bool:
 	var container_id := _inventory_container_id(runtime, actor_id)
@@ -183,7 +195,7 @@ static func _breakthrough_gap_refs(runtime: Dictionary, actor_id: String) -> Arr
 	var gaps := []
 	var character: Dictionary = runtime.get("incarnations", {}).get(actor_id, {})
 	var cultivation: Dictionary = character.get("cultivation", {})
-	if str(cultivation.get("current_stage_code", "")) != "A-2" or float(cultivation.get("cultivation_progress", 0.0)) < 120.0:
+	if str(cultivation.get("current_stage_code", "")) != "A-3" or float(cultivation.get("cultivation_progress", 0.0)) < _stage_progress_required("A-3"):
 		gaps.append("demo_bottleneck_not_reached")
 	if str(cultivation.get("bottleneck_state", "")) != "breakthrough_required":
 		gaps.append("breakthrough_required_state_missing")
@@ -199,7 +211,7 @@ static func _breakthrough_gap_refs(runtime: Dictionary, actor_id: String) -> Arr
 
 static func _is_demo_bottleneck_reached(runtime: Dictionary, actor_id: String) -> bool:
 	var cultivation: Dictionary = runtime.get("incarnations", {}).get(actor_id, {}).get("cultivation", {})
-	return str(cultivation.get("current_stage_code", "")) == "A-2" and float(cultivation.get("cultivation_progress", 0.0)) >= 120.0 and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
+	return str(cultivation.get("current_stage_code", "")) == "A-3" and float(cultivation.get("cultivation_progress", 0.0)) >= _stage_progress_required("A-3") and str(cultivation.get("bottleneck_state", "")) == "breakthrough_required"
 
 static func _has_item_instance_available(runtime: Dictionary, actor_id: String, item_template_id: String) -> bool:
 	var container_id := _inventory_container_id(runtime, actor_id)
@@ -217,14 +229,21 @@ static func _inventory_container_id(runtime: Dictionary, actor_id: String) -> St
 	return str(runtime.get("incarnations", {}).get(actor_id, {}).get("inventory_container_ref", {}).get("container_id", ""))
 
 static func _container_has_stack(runtime: Dictionary, container_id: String, item_template_id: String, amount: int) -> bool:
+	return _container_stack_amount(runtime, container_id, item_template_id) >= amount
+
+static func _container_stack_amount(runtime: Dictionary, container_id: String, item_template_id: String) -> int:
 	if container_id == "":
-		return false
+		return 0
 	var container: Dictionary = runtime.get("asset_containers", {}).get(container_id, {})
+	var total_amount := 0
 	for stack_id in container.get("item_stack_refs", []):
 		var stack: Dictionary = runtime.get("item_stacks", {}).get(str(stack_id), {})
-		if str(stack.get("item_template_id", "")) == item_template_id and int(stack.get("amount", 0)) >= amount:
-			return true
-	return false
+		if str(stack.get("item_template_id", "")) == item_template_id:
+			total_amount += int(stack.get("amount", 0))
+	return total_amount
+
+static func _stage_progress_required(stage_code: String) -> float:
+	return float(CULTIVATION_PROGRESS_REQUIRED.get(stage_code, 0.0))
 
 static func _character_has_sect_permission(runtime: Dictionary, actor_id: String, sect_id: String, permission: String) -> bool:
 	var identity: Dictionary = runtime.get("incarnations", {}).get(actor_id, {}).get("sect_identity", {})

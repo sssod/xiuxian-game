@@ -74,6 +74,19 @@ func _init() -> void:
 	if not _asset_logs_include(runtime.get("asset_logs", []), "resource_consumed"):
 		failures.append("Expected asset log for qingling_pill resource consumption.")
 
+	_settle_queue(runtime, content, [
+		PersonalActionInstruction.make_request_sect_resource(DemoConstants.LOCAL_CHARACTER_ID, 1, "sect_yunlu", "qingling_pill", 2, 4)
+	], failures, "request_two_qingling")
+	var effect_count_before: int = runtime.get("active_resource_effects", {}).size()
+	_settle_queue(runtime, content, [
+		PersonalActionInstruction.make_active_cultivation(DemoConstants.LOCAL_CHARACTER_ID, 1, "node_spirit_grass_slope", 24, true),
+		PersonalActionInstruction.make_active_cultivation(DemoConstants.LOCAL_CHARACTER_ID, 2, "node_spirit_grass_slope", 24, true)
+	], failures, "continuous_qingling_residuals")
+	if runtime.get("active_resource_effects", {}).size() < effect_count_before + 2:
+		failures.append("Expected consecutive qingling_pill use to create distinct ActiveResourceEffect entries.")
+	if _active_qingling_effect_refs(runtime).size() < 2:
+		failures.append("Expected previous and new qingling_pill residual effects to remain traceable instead of being overwritten.")
+
 	var save_result := SaveManager.save_game(runtime, "phase_c_self_test")
 	if not save_result["ok"]:
 		failures.append("Save failed: %s" % save_result["error"])
@@ -141,3 +154,11 @@ func _asset_logs_include(entries: Array, kind: String) -> bool:
 		if typeof(entry) == TYPE_DICTIONARY and str(entry.get("kind", "")) == kind:
 			return true
 	return false
+
+func _active_qingling_effect_refs(runtime: Dictionary) -> Array:
+	var refs := []
+	for effect_id in _character(runtime).get("active_resource_effect_refs", []):
+		var effect: Dictionary = runtime.get("active_resource_effects", {}).get(str(effect_id), {})
+		if str(effect.get("source_resource_ref", "")) == "qingling_pill" and str(effect.get("state", "active")) != "exhausted" and float(effect.get("remaining_effect_hours", 0.0)) > 0.0:
+			refs.append(str(effect_id))
+	return refs

@@ -1,3 +1,0 @@
-interface:
-  display_name: "Execute Batch Review"
-  short_description: "Repeated bounded inspection and fix workflow"

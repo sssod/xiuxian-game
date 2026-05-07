@@ -1,3 +1,0 @@
-interface:
-  display_name: "Execute Safe Refactor"
-  short_description: "Behavior-preserving structural cleanup"

@@ -1,3 +1,0 @@
-interface:
-  display_name: "Execute Dev Follow-Up"
-  short_description: "Implementation with explicit downstream verification handoff"

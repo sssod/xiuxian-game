@@ -19,12 +19,6 @@ temp/
 exports/
 captures/
 
-# Godot demo runtime/cache
-demo/godot/.godot/
-demo/godot/runtime/
-demo/godot/export_presets.cfg
-*.gd.uid
-
 # Local secrets should never be committed
 .env
 .env.*

@@ -16,7 +16,7 @@ Do not use files outside this project root as authority for this project.
 
 ## Current Work Mode
 
-The current project focus is design documentation iteration and Figma UI control refinement.
+The current project focus is design documentation iteration and UI control refinement.
 
 Default assumption: requests in this stage are documentation and design tasks, not engineering execution tasks, unless they explicitly mention coding, tests, runtime behavior, or source files.
 
@@ -24,20 +24,9 @@ Unless the user explicitly asks for implementation:
 
 - Do not modify gameplay, runtime, backend, frontend, database, deployment, or other source code.
 - Do not propose feature implementation as the default next step.
-- Treat docs, Notion, Figma, terminology, interaction specs, data contracts, and UI component behavior as the primary work surface.
+- Treat docs, UI artifacts, terminology, interaction specs, data contracts, and UI component behavior as the primary work surface.
 - Keep responses concise and avoid broad codebase exploration unless it is needed to update an implementation-facing document.
 - If implementation implications appear, record them as implementation notes or open questions instead of editing code.
-
-### Demo Development Exception
-
-When the user explicitly asks for demo development, treat the demo as a design-validation prototype used to test and refine the v2.2 plan, interaction flow, data contracts, and settlement assumptions. Demo code does not mean the overall project has entered the formal production implementation phase.
-
-Demo work should stay clearly scoped and separated from production assumptions:
-
-- Keep demo runtime code, content fixtures, saves, replays, and debugging tools under an explicit demo directory.
-- Prefer reversible Godot 4 / JSON prototypes that preserve v2.2 field names and settlement boundaries.
-- Do not use demo shortcuts as authority to rewrite source-of-truth design docs unless the user explicitly requests a documentation update.
-- Record implementation implications as demo findings, follow-up notes, or open questions instead of treating them as finalized architecture.
 
 ## Project Purpose
 
@@ -57,48 +46,51 @@ The player controls a cross-life true-spirit identity, not a sect, nation, or fi
 
 ## Current Source Of Truth
 
-Use the v2.2 document package in `docs/inbox` as the current local source of truth:
+Use the v2.3 document package in `docs/inbox` as the current latest local source of truth:
 
 ```text
-docs/inbox/修仙轮回沙盒_设计文档包_v2.2/
+docs/inbox/修仙轮回沙盒_设计文档包_v2.3/
 ```
 
 Start with:
 
 1. `README.md`
-2. `01_基础与总览/01_项目总览_MVP边界_系统依赖_v2.2.md`
-3. `01_基础与总览/03_术语表_命名规范_字段统一_v2.2.md`
-4. `03_实现交付/02_MVP开发切片与验收清单_v2.2.md`
-5. `04_UIUX与效果图/01_UIUX需求方案_v2.2.md`
-6. `04_UIUX与效果图/02_UI效果图生成Prompt速查_v2.2.md`
+2. `01_基础与总览/01_项目总览_MVP边界_系统依赖_v2.3.md`
+3. `01_基础与总览/03_术语表_命名规范_字段统一_v2.3.md`
+4. `02_核心系统规格/01_共享日历_房间推进_权威结算_v2.3.md`
+5. `03_实现交付/02_MVP开发切片与验收清单_v2.3.md`
+6. `04_UIUX与界面规范/01_UIUX需求方案_v2.3.md`
+7. `02_核心系统规格/08_事件突破战斗时间规则_v2.3.md`
 
-During high-frequency Figma UI iteration, do not maintain per-iteration "精修规格" document series unless explicitly requested. Use the current Figma artifact for node-level layout and component placement, and record only stable UI decisions in the v2.2 UI/UX documents.
+During high-frequency UI iteration, do not maintain per-iteration "精修规格" document series unless explicitly requested. Use the current UI artifact for node-level layout and component placement, and record only stable UI decisions in the v2.3 UI/UX documents.
 
 When documents conflict, prefer this order:
 
 ```text
 AGENTS.md
--> current Figma UI artifact, for node-level main UI layout / component placement
--> v2.2 UI/UX requirement document, for stable UI decisions
--> v2.2 terminology / field-unification document
--> v2.2 room turn / action economy / sect AI documents
--> v2.2 runtime state / migration table
--> other v2.2 system documents
--> older Notion or imported historical documents
+-> current UI artifact, for node-level main UI layout / component placement
+-> v2.3 UI/UX requirement document, for stable UI decisions
+-> v2.3 terminology / field-unification document
+-> v2.3 shared calendar / command queue / event breakthrough combat / sect AI documents
+-> v2.3 runtime state / data model / result package documents
+-> other v2.3 system documents
+-> older imported historical documents
 -> CLAUDE.md compatibility notes
 ```
 
-Before changing product, design, UI, data, or implementation-facing docs, read the package `README.md` and the relevant v2.2 document for the subsystem being touched.
+Before changing product, design, UI, data, or implementation-facing docs, read the package `README.md` and the relevant v2.3 document for the subsystem being touched.
 
 ## Current Design Contract
 
-- The player-facing minimum progression unit is `turn_id`, not `quarter`.
-- Each turn has configurable duration; current default is 5 game days.
-- UI presents a day-level turn time budget bar.
-- Server settlement uses hour-level internal ticks such as `world_hour` / `hour_tick`.
+- The player-facing time surface is a shared continuous world calendar, not `turn_id`, `quarter`, or fixed action slots.
+- Primary time fields are `world_day / world_hour`; 1 game day = 24 game hours.
+- Server settlement uses 1-hour ticks through `hour_tick`.
+- Public speed states are `F1 / N1 / B1 / P0`; internal catch-up uses `C1`.
 - Players submit a small linear list of personal action instructions, not an hour-by-hour schedule.
+- Ordinary actions use `Command` and `CommandQueue`: current command plus up to 3 pending preinput commands.
 - Client submits intent; authoritative validation, settlement, state mutation, logs, and replay data belong to the server-side settlement path.
 - S1 / room authoritative settlement is the integration bus. Subsystems should output result packages and should not directly bypass the settlement bus to mutate world state.
+- Replays use `TimelineReplay`, recording speed segments, queue changes, events, formal encounter rounds, result packages, and settlement steps.
 - Sect gameplay is an organizational resource platform, not direct player control.
 - MVP removes player sect instant commands, sect main-action suggestions, sect proposals, and sect decision phases.
 - Each sect may have at most one active `SectContinuousActionState` at the same time, maintained by sect AI.
@@ -106,73 +98,19 @@ Before changing product, design, UI, data, or implementation-facing docs, read t
 - Learned methods come from complete method carriers; fragments / chapters are assets for synthesis, clues, permissions, or content delivery, not runtime learning progress.
 - Dan pills, spiritual materials, talismans, and temporary boost resources enter settlement as action resource inputs such as `ActionResourceInputBinding`, not as a default standalone "丹药炼化" action.
 - Unused consumed resource effects are represented by `ActiveResourceEffect` and can persist across turns according to residual policy.
+- Formal combat and breakthrough challenges use `FormalEncounterState` in B1. One B1 round equals 1 game hour.
 
 ## External Resource Index
-
-Resource check dates are recorded per section.
-
-### Notion
-
-Checked on 2026-05-06.
-
-Latest checked Notion package entry:
-
-- `修仙轮回沙盒_设计文档包_v2.2`
-- https://www.notion.so/358dffce59dc801790b1d4f6009d2a9e
-- Contains mounted entries for `01_基础与总览`, `02_核心系统规格`, `03_实现交付`, `04_UIUX与效果图`, `README`, `MANIFEST`, and `QA_自动检查报告`.
-
-Note: the v2.2 Notion parent page was repaired on 2026-05-06 from the `修仙轮回沙盒_设计文档包_v2.2 Import May 6, 2026` wrapper page. The blank original imported folder root is retained only under the zip import record as `修仙轮回沙盒_设计文档包_v2.2（原导入根，已归并）`.
-
-Zip import / page mapping record:
-
-- `Zip Import - 修仙轮回沙盒_设计文档包_v2.2.zip - May 6, 2026`
-- https://www.notion.so/358dffce59dc818b9096fa160cb7933b
-- Records the v2.2 zip import and source-file-to-Notion-page mappings.
-
-Historical references:
-
-- `[已过时]修仙轮回沙盒_设计文档包_v2.1`: https://www.notion.so/352dffce59dc81659844f34177712f05
-- `Zip Import - 修仙轮回沙盒_设计文档包_v2.1.zip - Apr 30, 2026`: https://app.notion.com/p/352dffce59dc81489e33c21f3c5beb42
-- `修仙轮回沙盒｜项目总览与顶层设计定案 0424`: https://app.notion.com/p/0c9dffce59dc83d49a4c8147a47b6b36
-- `修仙轮回沙盒_UIUX需求最终方案_v1.1`: https://app.notion.com/p/351dffce59dc8062802cd14ff328e743
-
-Treat historical Notion pages as traceability only when v2.2 is silent.
 
 ### Figma
 
 Checked on 2026-05-07.
 
-Current Figma UI file:
+Root Figma file:
 
 - `XiuxianUI`
 - https://www.figma.com/design/5NFYx1eLoNKzLxRMqbSh0l/XiuxianUI?m=auto&t=zZ0MxmVIsFqU5atg-6
 - File key: `5NFYx1eLoNKzLxRMqbSh0l`
-
-Located page and frames:
-
-- Current main UI index page: `UI_MainFrame_v2.3_CalendarPreinput`, node `345:2818`
-- Current main UI frame: `Main_1920x1080_N1_NormalQueue_v2.3`, node `345:2819`
-- Current Figma trace / resource gate frame: `Resource_Gate_And_DocTrace_v2.3`, node `345:3060`
-- Previous v0.9 main UI page, retained as old reference only: `UI_MainFrame_Rebuild_v0.9`, node `89:2`
-- Previous v0.9 state frame: `State_01_Prepare_InfoProcessing_1920x1080`, node `89:3`
-- Previous v0.9 state frame: `State_02_Planning_WithContinuation_1920x1080`, node `89:124`
-- Previous v0.9 state frame: `State_03_Planning_ContinuationCancelled_1920x1080`, node `89:288`
-- Previous v0.9 state frame: `State_04_LockedWaiting_Readonly_1920x1080`, node `89:452`
-- Previous v0.9 state frame: `State_05_AutopilotPreview_1920x1080`, node `89:583`
-- Previous v0.9 state frame: `State_06_SidePanelsCollapsed_1920x1080`, node `89:725`
-- Previous v0.9 component page, do not use as current main UI basis unless explicitly requested: `UI_MainFrame_Components_v0.9`, node `89:822`
-- Previous v0.9 component library frame: `ComponentLibrary_FilledSpec_v0.9`, node `93:2`
-- Previous v0.9 flow page: `UI_MainFrame_Flows_v0.9`, node `89:937`
-- Previous v0.9 flow detail frame: `Flow_DetailFill_v0.9`, node `96:2`
-- Archived old page: `[archived]UI_TurnStart_InfoProcessing_v0.1`, node `1:2`
-
-The current Figma index page is the v2.3 calendar-preinput main UI page. It is based on `docs/inbox/修仙轮回沙盒_设计文档包_v2.3/04_UIUX与界面规范/01_UIUX需求方案_v2.3.md` and represents the shared-calendar action workbench: top world calendar / speed / character summary, large world map as first-view subject, right node context / log panel, and bottom current command + up to 3 preinput commands + fallback rule + explicit autopilot preview entry.
-
-The v0.9 rebuild pages and components are retained for traceability only. They are no longer the current Figma main UI layout basis and should not be reused for new v2.3 main-interface composition unless the user explicitly requests comparison or migration work.
-
-Subscribed libraries observed in the file include Material 3 Design Kit, Simple Design System, and Apple platform UI kits. Do not assume these are the project's own design system unless a specific Figma node uses them.
-
-Use the Notion and Figma connectors to re-check these resources when a task depends on external context. If access fails, record that the external resource was not verified instead of guessing.
 
 ## Repository Layout
 
@@ -184,38 +122,27 @@ xiuxian-game/
   docs/
     inbox/
       README.md
-      修仙轮回沙盒_设计文档包_v2.2/
+      修仙轮回沙盒_设计文档包_v2.3/
 ```
 
 The repo is currently documentation-first. Do not invent engine, backend, database, or deployment implementation details beyond the current documents.
 
 ## Working Conventions
 
-- Keep edits scoped to the user request and the current v2.2 design package.
+- Keep edits scoped to the user request and the current v2.3 design package.
 - Preserve the existing document language. Current project design documents are primarily Chinese.
 - Preserve Chinese project terminology in design docs unless a specific file clearly uses English.
-- Prefer v2.2 field names such as `turn_id`, `world_day`, `world_hour`, `hour_tick`, `macro_period_id`, `TurnReplay`, `SectContinuousActionState`, `ActionResourceInputBinding`, and `ActiveResourceEffect`.
-- Avoid reintroducing old terms as active implementation concepts: `quarter`, `action_slot`, `current_quarter`, `QuarterReplay`, `SectDecisionIntent`, sect main-action input, or six lunar action slots.
-- Keep design changes traceable to the v2.2 package or explicitly mark them as new decisions.
+- Prefer v2.3 field names such as `world_day`, `world_hour`, `hour_tick`, `macro_period_id`, `Command`, `CommandQueue`, `TimelineReplay`, `FormalEncounterState`, `SectContinuousActionState`, `ActionResourceInputBinding`, and `ActiveResourceEffect`.
+- Avoid reintroducing old terms as active implementation concepts: `turn_id`, `quarter`, `action_slot`, `current_quarter`, `TurnReplay`, `QuarterReplay`, `SectDecisionIntent`, sect main-action input, or six lunar action slots.
+- Keep design changes traceable to the v2.3 package or explicitly mark them as new decisions.
 - If moving files out of `docs/inbox`, preserve source provenance and update this governance file.
 - When updating governance, keep resource links, checked dates, and source precedence current.
-- If Notion or Figma resources move, update the External Resource Index with the new URL, title, and checked date.
-
-## Godot Headless Test Guidance
-
-When running Godot headless demo self-tests from Codex, prefer requesting approved escalation for the Godot command up front. Godot writes `user://logs` outside the workspace sandbox, and a sandboxed first run can crash while opening a log file before the test script runs.
-
-Recommended operation:
-
-1. Run `/Applications/Godot.app/Contents/MacOS/Godot --headless --path demo/godot --script res://tests/<test_name>.gd` with approved escalation.
-2. If a sandboxed run was already attempted and crashes while opening `user://logs/...`, do not treat that as a gameplay or test regression.
-3. Rerun the exact same headless command with approved escalation, then judge the test result from that rerun.
-
+- If the root Figma file moves, update the External Resource Index with the new URL, title, file key, and checked date.
 
 ## Useful Commands
 
 ```bash
 ls docs
 find docs/inbox -maxdepth 3 -type f
-rg "turn_id|world_hour|SectContinuousActionState" docs/inbox
+rg "world_day|world_hour|TimelineReplay|SectContinuousActionState" docs/inbox
 ```

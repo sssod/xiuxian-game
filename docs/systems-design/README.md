@@ -9,10 +9,10 @@
 - [events-breakthrough-combat-time-rules.md](events-breakthrough-combat-time-rules.md)：事件、突破与战斗时间规则。
 - [character-true-spirit-reincarnation-cultivation.md](character-true-spirit-reincarnation-cultivation.md)：角色、真灵、轮回与修炼养成。
 - [sect-organization-inventory-ai.md](sect-organization-inventory-ai.md)：宗门组织、库存与宗门 AI 持续行动。
+- [map-nodes-world-evolution.md](map-nodes-world-evolution.md)：地图节点与沙盒世界演化。
+- [economy-items-assets-npc-persistence.md](economy-items-assets-npc-persistence.md)：经济、物品、资产容器与 NPC 持久化。
 
 后续可迁移：
 
-- 地图节点、世界演化。
-- 经济、物品、资产与 NPC 持久化。
 - 后手遗产、可见性与多人间接竞争。
 - 运行时状态、数据模型与结果包。

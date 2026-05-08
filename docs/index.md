@@ -27,6 +27,7 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | 个人行动队列、移动通行与托管 | [systems-design/personal-command-queue-movement-managed-actions.md](systems-design/personal-command-queue-movement-managed-actions.md) |
 | 事件、突破与战斗时间规则 | [systems-design/events-breakthrough-combat-time-rules.md](systems-design/events-breakthrough-combat-time-rules.md) |
 | 角色、真灵、轮回与修炼养成 | [systems-design/character-true-spirit-reincarnation-cultivation.md](systems-design/character-true-spirit-reincarnation-cultivation.md) |
+| 宗门组织、库存与宗门 AI 持续行动 | [systems-design/sect-organization-inventory-ai.md](systems-design/sect-organization-inventory-ai.md) |
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
 
 ## 正式目录

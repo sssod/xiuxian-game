@@ -8,10 +8,10 @@
 - [personal-command-queue-movement-managed-actions.md](personal-command-queue-movement-managed-actions.md)：个人行动队列、移动通行与托管。
 - [events-breakthrough-combat-time-rules.md](events-breakthrough-combat-time-rules.md)：事件、突破与战斗时间规则。
 - [character-true-spirit-reincarnation-cultivation.md](character-true-spirit-reincarnation-cultivation.md)：角色、真灵、轮回与修炼养成。
+- [sect-organization-inventory-ai.md](sect-organization-inventory-ai.md)：宗门组织、库存与宗门 AI 持续行动。
 
 后续可迁移：
 
-- 宗门组织、库存与宗门 AI。
 - 地图节点、世界演化。
 - 经济、物品、资产与 NPC 持久化。
 - 后手遗产、可见性与多人间接竞争。

@@ -1,4 +1,14 @@
 # UI Design
 
-Use this directory for screen inventory, wireframes, flow diagrams, interaction
-states, visual direction, component notes, and Figma references.
+本目录承载屏幕清单、交互状态、UI 流程、组件行为、视觉方向和 Figma 参考。
+
+当前状态：
+
+- 首批迁移未建立独立 UI canonical 文档，但核心 UI 约束已被吸收到项目总览、术语字段、共享日历结算和 MVP 验收中。
+
+后续可迁移：
+
+- 主界面信息架构。
+- 顶部时间 / 速度显示。
+- 行动队列面板与编辑交互。
+- 局部时停、C1 追赶、B1 交锋界面。

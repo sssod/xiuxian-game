@@ -33,6 +33,7 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | 后手、遗产、可见性与多人间接竞争 | [systems-design/contingency-legacy-visibility-indirect-competition.md](systems-design/contingency-legacy-visibility-indirect-competition.md) |
 | 运行时状态、数据模型与结果包 | [systems-design/runtime-state-data-model-result-packages.md](systems-design/runtime-state-data-model-result-packages.md) |
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
+| UI/UX 稳定需求 | [ui-design/uiux-stable-requirements.md](ui-design/uiux-stable-requirements.md) |
 
 ## 正式目录
 

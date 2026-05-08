@@ -4,11 +4,11 @@
 
 当前状态：
 
-- 首批迁移未建立独立 UI canonical 文档，但核心 UI 约束已被吸收到项目总览、术语字段、共享日历结算和 MVP 验收中。
+- 已建立 UI/UX 稳定需求 canonical 文档：
+  - [uiux-stable-requirements.md](uiux-stable-requirements.md)
 
-后续可迁移：
+当前使用原则：
 
-- 主界面信息架构。
-- 顶部时间 / 速度显示。
-- 行动队列面板与编辑交互。
-- 局部时停、C1 追赶、B1 交锋界面。
+- 后续 UI、原型和验收应优先读取 `uiux-stable-requirements.md`。
+- 节点级版面、组件坐标和视觉稿仍以后续当前 UI artifact / Figma 为准。
+- 本目录不承载 `docs/inbox` 原始导出；原始 UI 资料只作为 provenance 和冲突比对来源。

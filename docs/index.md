@@ -34,6 +34,7 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | 运行时状态、数据模型与结果包 | [systems-design/runtime-state-data-model-result-packages.md](systems-design/runtime-state-data-model-result-packages.md) |
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
 | UI/UX 稳定需求 | [ui-design/uiux-stable-requirements.md](ui-design/uiux-stable-requirements.md) |
+| 风险登记与技术决策门 | [production/risk-register-technical-decision-gates.md](production/risk-register-technical-decision-gates.md) |
 
 ## 正式目录
 

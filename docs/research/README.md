@@ -1,4 +1,12 @@
 # Research
 
-Use this directory for references, genre analysis, competitor notes, player
-research, risk notes, and design source summaries.
+本目录承载调研、类型分析、竞品记录、玩家研究、风险分析和设计来源摘要。
+
+当前状态：
+
+- 首批迁移尚未在本目录建立 canonical 文档。
+
+注意：
+
+- 本目录内容不自动构成最终设计承诺。
+- 若调研结论转为设计规则，需要迁移到对应正式设计文档并记录来源。

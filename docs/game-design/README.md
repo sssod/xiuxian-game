@@ -1,4 +1,13 @@
 # Game Design
 
-Use this directory for gameplay loops, player actions, room flow, progression,
-failure states, and reincarnation-loop rules.
+本目录承载玩家循环、行动规则、房间流程、进度、失败状态与轮回规则。
+
+当前状态：
+
+- 首批迁移尚未在本目录建立 canonical 文档。
+
+后续可迁移：
+
+- 个人行动队列与玩家操作流。
+- 事件、突破、战斗的玩家体验规则。
+- 死亡、转世与跨世成长循环。

@@ -1,4 +1,13 @@
 # Playtest
 
-Use this directory for playtest plans, observation notes, feedback synthesis,
-and iteration decisions after prototypes exist.
+本目录承载 playtest 计划、观察记录、反馈综合、调参记录和原型迭代决策。
+
+当前状态：
+
+- 首批迁移尚未在本目录建立 canonical 文档。
+
+后续可迁移：
+
+- M0→M3 纵向闭环测试计划。
+- 3 人共享房间测试脚本。
+- 时间速度、局部时停、B1 交锋和队列机制验证记录。

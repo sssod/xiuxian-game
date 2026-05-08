@@ -1,4 +1,13 @@
 # Worldbuilding
 
-Use this directory for setting, sects, realms, terminology, narrative tone,
-encounters, artifacts, and reincarnation lore.
+本目录承载世界观、宗门、地域、势力、叙事语气、遭遇、器物和轮回 lore。
+
+当前状态：
+
+- 首批迁移尚未在本目录建立 canonical 文档。
+
+后续可迁移：
+
+- 宗门 lore 与组织设定。
+- 地图节点、地域与势力背景。
+- 功法载体、遗物与轮回相关叙事术语。

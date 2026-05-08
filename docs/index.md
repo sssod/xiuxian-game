@@ -35,6 +35,12 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | UI/UX 稳定需求 | [ui-design/uiux-stable-requirements.md](ui-design/uiux-stable-requirements.md) |
 | 风险登记与技术决策门 | [production/risk-register-technical-decision-gates.md](production/risk-register-technical-decision-gates.md) |
 
+## 文档维护
+
+| 主题 | 文档 | 说明 |
+| --- | --- | --- |
+| Canonical 文档变更日志 | [CHANGELOG.md](CHANGELOG.md) | 记录正式 canonical 文档的新增、删除、改名、拆分与合并 |
+
 ## 已归档参考
 
 | 主题 | 文档 | 说明 |

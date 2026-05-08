@@ -4,8 +4,11 @@
 
 当前 canonical 文档：
 
-- [document-consolidation-plan.md](document-consolidation-plan.md)：正式文档架构与迁移计划。
 - [glossary-and-field-naming.md](glossary-and-field-naming.md)：术语表、命名规范与字段统一。
+
+已归档参考：
+
+- [document-consolidation-plan.md](document-consolidation-plan.md)：正式文档架构与迁移计划完成记录，不进入外部知识库导出包。
 
 注意：
 

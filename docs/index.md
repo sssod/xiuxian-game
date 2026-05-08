@@ -13,13 +13,12 @@
 docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_v2 3/
 ```
 
-正式文档已开始从 v2.3 主源迁移。旧版本和 `[已过时]` 文件仅用于冲突比对、来源追溯和背景补充。
+正式文档已完成从 v2.3 主源迁移。旧版本和 `[已过时]` 文件仅用于冲突比对、来源追溯和背景补充。
 
 ## 当前 canonical 文档
 
 | 主题 | 文档 |
 | --- | --- |
-| 文档架构与迁移计划 | [references/document-consolidation-plan.md](references/document-consolidation-plan.md) |
 | 项目总览、MVP 边界与系统依赖 | [concept/project-overview-mvp-scope.md](concept/project-overview-mvp-scope.md) |
 | 核心体验、玩家目标与设计基石 | [concept/core-experience-player-goals-pillars.md](concept/core-experience-player-goals-pillars.md) |
 | 术语表、命名规范与字段统一 | [references/glossary-and-field-naming.md](references/glossary-and-field-naming.md) |
@@ -35,6 +34,12 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
 | UI/UX 稳定需求 | [ui-design/uiux-stable-requirements.md](ui-design/uiux-stable-requirements.md) |
 | 风险登记与技术决策门 | [production/risk-register-technical-decision-gates.md](production/risk-register-technical-decision-gates.md) |
+
+## 已归档参考
+
+| 主题 | 文档 | 说明 |
+| --- | --- | --- |
+| 文档架构与迁移计划 | [references/document-consolidation-plan.md](references/document-consolidation-plan.md) | 迁移完成记录，不进入 Notion / ChatGPT Library 导出包 |
 
 ## 正式目录
 

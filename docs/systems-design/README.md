@@ -14,7 +14,8 @@
 - [contingency-legacy-visibility-indirect-competition.md](contingency-legacy-visibility-indirect-competition.md)：后手、遗产、可见性与多人间接竞争。
 - [runtime-state-data-model-result-packages.md](runtime-state-data-model-result-packages.md)：运行时状态、数据模型与结果包。
 
-第三批剩余跨目录迁移：
+迁移状态：
 
-- UI/UX 稳定需求应进入 `docs/ui-design`。
-- 风险登记与技术决策门应进入 `docs/production`。
+- 第三批迁移已完成。
+- UI/UX 稳定需求已进入 `docs/ui-design/uiux-stable-requirements.md`。
+- 风险登记与技术决策门已进入 `docs/production/risk-register-technical-decision-gates.md`。

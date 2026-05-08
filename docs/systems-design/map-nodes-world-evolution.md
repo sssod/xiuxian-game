@@ -65,6 +65,7 @@ WorldMapState {
   node_states: Dictionary
   route_states: Dictionary
   active_region_effects: Array
+  resource_budget_refs: Array
   rumor_pool_refs: Array
   visibility_overrides: Dictionary
 }
@@ -74,7 +75,7 @@ WorldMapState {
 
 1. `current_world_day / current_world_hour` 与 `RoomState` 同步。
 2. `current_macro_period_id` 只用于季节、旬月、灾变期、资源再生批次等宏观周期，不作为玩家回合。
-3. 地图变化输出 `node_delta`、`route_delta`、`resource_slot_delta`、`visibility_delta`、`event_window_delta` 等结果包字段。
+3. 地图变化输出 `node_delta`、`route_delta`、`resource_slot_delta`、`world_production_budget_delta`、`visibility_delta`、`event_window_delta` 等结果包字段。
 4. 地图系统不得绕过 S1 直接改写角色、宗门或经济状态。
 
 ## 4. 节点图与路线
@@ -239,6 +240,20 @@ aura_profile {
 
 这些效果必须通过行动模板、设施权限、资源使用日志和结果包进入结算，不得作为无来源全局倍率。
 
+修炼数值读取节点时，应通过 `NodeRealmSupport` 或等价模板表达：
+
+```text
+节点支持的境界段标签；
+灵气品阶、密度与相性；
+兼容角色容量；
+兼容小时消耗与再生；
+每世界小时风险；
+机会窗口修正；
+竞争策略。
+```
+
+节点灵气只提供当前 `RealmSegment` 的相对效率和压力 / 风险修正，不直接发放 raw 修为。
+
 ## 9. 节点资源槽
 
 `NodeResourceSlot` 代表节点自然、半自然或组织控制的产出位置。
@@ -266,6 +281,47 @@ NodeResourceSlot {
 5. 公开信息通过可见性系统进入地图摘要、日志或传闻。
 
 资源再生可按 `world_hour` 连续累计，也可按 `macro_period_id` 做批量刷新，但记录仍需能追溯到世界时间。
+
+### 9.1 资源投放预算
+
+地图层继承旧设定中的 `WorldResourceBudget`。它控制区域、节点和机会窗口可向世界投放多少资源，不是玩家可见库存，也不替代 `NodeResourceSlot`、`ResourcePool` 或资产容器。
+
+```text
+WorldResourceBudget {
+  budget_id: String
+  world_id: String
+  region_id: String | null
+  tier_code: String
+  budget_type: stable | opportunity | rare | legacy
+  max_value: number
+  spent_value: number
+  reserved_value: number
+  refresh_rule: String
+}
+```
+
+使用口径：
+
+```text
+stable：地图骨架保证下限，支持受控节点常态产出；
+opportunity：按区域、事件压力和阶段预算生成机会型资源；
+rare：必须由事件、秘境、隐藏层、强敌或争夺链路承载；
+legacy：正式后手、遗产、密库或封存链路，不混入普通随机奖励池。
+```
+
+资源槽出现资源时，应记录其来自哪个 `WorldResourceBudget` 或旧资产容器。高价值物品一旦进入显性库存或事件锁定奖励，按 `BudgetValue / V_world_budget` 扣除；出售、拆解、销毁、上交、损坏或消耗不返还生成预算。
+
+阶段预算投放到地图时，优先进入 `WorldResourceBudget` 的预留、`NodeResourceSlot`、`OpportunityWindow` 或区域效果，不直接改写角色修为。
+
+规则：
+
+```text
+WorldStageBudgetState.active_budget_realm 决定当前稳定投放的最高资源阶段；
+先锋资源可通过 next_realm_leakage_rate 少量提前泄漏；
+新阶段预算打开后，节点资源应在 1-3 个宏观周期内逐渐显现；
+预算投放必须产生 world_production_budget_delta / resource_slot_delta / event_window_delta / visible or hidden log；
+recommended_stage_range 只做筛选、提示和风险预期，不作为预算硬锁。
+```
 
 ## 10. 控制权与影响力
 
@@ -598,6 +654,7 @@ v2.3 07_后手遗产_可见性_多人间接竞争
 v2.3 01_UIUX需求方案
 v2.3 02_MVP开发切片与验收清单
 v2.3 05_原始文档映射与来源索引
+修为年限、境界收益与阶段预算数值设计
 ```
 
 参考来源：
@@ -606,6 +663,7 @@ v2.3 05_原始文档映射与来源索引
 v2.2 地图节点_世界演化
 旧版地图节点、资源槽与建筑槽设计案
 旧版沙盒世界演化与地图节点生成规则草稿
+旧版经济系统框架与物品产出草稿
 ```
 
 裁决：
@@ -616,6 +674,7 @@ v2.2 地图节点_世界演化
 | 有向带权路线使用小时成本 | 行动格或回合槽成本 | 移动是普通持续 `Command`，执行前再次校验 |
 | `risk_level` 驱动兜底与托管默认 | 只用文案危险描述 | 自动兜底、显式托管和 UI 风险提示都需要结构字段 |
 | 节点资源槽输出资源池 / 资源量并经行动转化 | 节点直接无来源发放任意物品 | 资源进入经济系统时必须可审计、可回放 |
+| `WorldResourceBudget` 控制地图资源投放，阶段预算只做境界调度 | 高阶资源无来源全图刷新或把阶段预算当作唯一预算池 | 沙盒随玩家突破开放机会，但每次资源出现仍需预算来源、时间、可见性和资产日志 |
 | 控制权 + 影响力模型 | 玩家逐节点经营接管 | 节点变化由行动、宗门 AI、事件和后手共同推动 |
 | 后手失败必须有明确原因 | 后手每回合随机磨损或无日志失效 | 轮回体验需要可复盘和可解释 |
 | 地图可见性分层 | 地图公开所有节点真相和私人归因 | 多人间接竞争依赖信息边界与传闻系统 |

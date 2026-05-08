@@ -36,6 +36,9 @@ MVP 保留：
 
 ```text
 资产容器；
+资源池 / ResourcePool；
+世界产出预算账本；
+资产生成请求与预算扣除记录；
 物品实例 / 可堆叠数量；
 灵石与货币余额；
 丹药、灵材、符箓、法器、功法载体等物品类型；
@@ -93,6 +96,75 @@ MVP 不引入：
 | 封存 | 资产进入正式后手、遗产、密库、事件锁定或隐藏层 |
 
 所有高价值资产变化必须可审计、可复盘，并进入结果包。
+
+### 3.1 世界产出预算与资源流转
+
+预算相关设定继承旧版资源流转框架。`WorldStageBudgetState / RealmBudgetPool` 只负责境界阶段的解锁与分配，不覆盖 `WorldProductionBudgetState`、`WorldItemBudgetTier`、`WorldResourceBudget`、`ResourcePool` 和资产容器链路。
+
+资源和资产生成应按以下顺序理解：
+
+```text
+世界产出预算：控制该阶级 / 区域 / 类型还能投放多少；
+ResourcePool：节点、区域或系统中的潜在产能 / 可采资源量；
+AssetGenerationRequest：事件、采集、秘境、任务、交易或 NPC 掉落提出生成请求；
+AssetContainer：生成成功后的明确资产位置；
+ledger / logs：记录来源、预算扣除、可见性和后续流转。
+```
+
+推荐结构：
+
+```text
+ResourcePool {
+  pool_id: String
+  owner_type: world | region | node | sect | event | system
+  owner_id: String
+  resource_template_id: String
+  current_amount: number
+  max_amount: number
+  regen_rule: String
+  budget_ref: String | null
+  visibility_policy: String
+}
+
+AssetGenerationRequest {
+  request_id: String
+  source_system: String
+  generation_context: Dictionary
+  tier_budget_ref: String | null
+  resource_budget_ref: String | null
+  reward_profile_ref: String
+  target_container_ref: String | null
+  event_locked_first: bool
+  visibility_policy: String
+}
+
+AssetGenerationResult {
+  success: bool
+  generated_asset_refs: Array
+  budget_value_spent: number
+  source_budget_refs: Array
+  target_container_ref: String | null
+  ledger_entry_ref: String
+  failure_reason: String | null
+}
+```
+
+预算价值使用世界生成预算价值，不等于交易价格：
+
+```text
+BudgetValue = V_world_budget
+```
+
+规则：
+
+1. 世界生成预算不在隐性候选生成时扣除，而在资产进入玩家、宗门、NPC、市场、节点显性库存或事件锁定奖励时扣除。
+2. `BudgetValue` 不受市场通胀、买卖折扣或临时行情影响；它用于消耗对应阶级 / 类型的世界产出预算。
+3. 出售、拆解、销毁、上交、损坏或消耗不返还世界生成预算。
+4. 预算不足时，可降品级、降阶级、替换为资源 / 线索 / 副产物、延迟刷新、生成“发现但暂不可取”的事件状态，或触发守护 / 争夺事件。
+5. 高于当前阶段预算境界的资源只能来自先锋泄漏、剧情、后手、宗门重大事件、强敌真实资产、事件锁定奖励或专属资源池。
+6. 每次预算投放必须记录 realm / tier、budget_ref、macro_period_id、source_system、world_day / world_hour、visibility_policy 和 ledger_entry_ref。
+
+NPC 掉落、秘境奖励、商店刷新、宗门任务奖励和节点采集都必须走同一来源链路。轻量 NPC 不得在战斗开始时临时生成完整库存；可获得资产只能来自持久化随身 / 可调用资产、事件锁定奖励包，或有预算来源的奖励包。
 
 ## 4. AssetContainer
 
@@ -257,6 +329,25 @@ ActionResourceInputBinding {
 8. C1 追赶只补确定性资源效果。
 
 MVP 不把“丹药炼化”作为默认独立持续行动。修为丹药、定心类资源、避瘴类资源、疗伤资源等应作为行动或事件的资源输入，按兼容小时和当前状态结算。
+
+资源效果按 `ResourceEffectBalance` 或等价模板定价，不写成固定 raw 修为收益。资源模板至少应能表达：
+
+```text
+benchmark_hours_saved；
+normalized_progress_bonus；
+rate_multiplier；
+compatible_hours；
+contribution_cap_ratio；
+meridian_pressure_delta；
+mental_risk_delta；
+foundation_delta；
+breakthrough_success_delta；
+breakthrough_quality_delta；
+residual_policy；
+stack_policy。
+```
+
+资源价值必须通过当前境界段的 `RealmInputFitMatrix` 校验品阶、相性、贡献上限、浪费和反噬风险。
 
 ## 9. ActiveResourceEffect
 
@@ -677,6 +768,8 @@ v2.2 经济物品资产_NPC持久化
 修为修炼公式_资源输入与丹药药性处理补充_v0.2
 功法系统_收敛设定汇总_v0.4
 旧版经济系统框架、物品产出、NPC 持久化与库存草稿
+旧版沙盒世界演化与地图节点生成规则草稿
+修为年限、境界收益与阶段预算数值设计
 ```
 
 裁决：
@@ -686,6 +779,8 @@ v2.2 经济物品资产_NPC持久化
 | 经济系统定位为资源流转与资产可信系统 | 完整市场模拟或全 NPC 社会模拟 | MVP 重点是来源、权限、消耗、日志和回放可信 |
 | `AssetContainer` 作为资产持有基础 | 直接把资产挂在 NPC、宗门或节点文案上 | 容器模型能统一角色背包、宗门库存、节点资源、商店和后手封存 |
 | 丹药等通过 `ActionResourceInputBinding` 绑定行动 / 事件 | 即时服丹涨修为、默认丹药炼化行动 | 与短队列、资源输入、残余效果和突破 B1 合同一致 |
+| 资源效果按 `ResourceEffectBalance` 定价 | 资源模板写死 raw 修为收益 | 资源价值需要随境界适配、贡献上限、压力和突破相关性变化 |
+| 世界产出预算控制资产与机会投放，阶段预算只做境界调度 | 高阶资源无来源刷新、直接给角色修为或把阶段预算当成唯一预算 | 预算打开提供世界机会，不自动赠送成长；资源流转、预算扣除和资产变化都必须可审计 |
 | `ActiveResourceEffect` 记录残余效果 | 消耗后丢失未用完药性 / 符效 | 残余效果需要按兼容小时、叠加和过期规则复盘 |
 | 完整功法载体生成 `MethodState` | 残页 / 章节直接作为学习进度 | 避免内容资产与运行时掌握度混淆 |
 | 商店库存是资产容器 | 掌柜个人背包即商店库存 | 支持商店、市场、宗门、节点库存分层 |

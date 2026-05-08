@@ -26,6 +26,7 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | 个人行动队列、移动通行与托管 | [systems-design/personal-command-queue-movement-managed-actions.md](systems-design/personal-command-queue-movement-managed-actions.md) |
 | 事件、突破与战斗时间规则 | [systems-design/events-breakthrough-combat-time-rules.md](systems-design/events-breakthrough-combat-time-rules.md) |
 | 角色、真灵、轮回与修炼养成 | [systems-design/character-true-spirit-reincarnation-cultivation.md](systems-design/character-true-spirit-reincarnation-cultivation.md) |
+| 修为年限、境界收益与世界产出预算阶段调度 | [systems-design/cultivation-realm-numeric-balance.md](systems-design/cultivation-realm-numeric-balance.md) |
 | 宗门组织、库存与宗门 AI 持续行动 | [systems-design/sect-organization-inventory-ai.md](systems-design/sect-organization-inventory-ai.md) |
 | 地图节点与沙盒世界演化 | [systems-design/map-nodes-world-evolution.md](systems-design/map-nodes-world-evolution.md) |
 | 经济、物品、资产容器与 NPC 持久化 | [systems-design/economy-items-assets-npc-persistence.md](systems-design/economy-items-assets-npc-persistence.md) |
@@ -75,6 +76,16 @@ FormalEncounterState
 SectContinuousActionState
 ActionResourceInputBinding
 ActiveResourceEffect
+RealmSegmentBalance
+normalized_segment_progress
+WorldProductionBudgetState
+WorldItemBudgetTier
+WorldResourceBudget
+ResourcePool
+BudgetValue
+WorldStageBudgetState
+RealmBudgetPool
+CultivationTickResult
 ```
 
 Deprecated active concepts:

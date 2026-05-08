@@ -19,6 +19,7 @@
 | --- | --- | --- |
 | 世界日历 | 房间共享的连续世界时间 | `world_day / world_hour` |
 | 游戏日 | 24 个游戏小时 | `world_day` |
+| 游戏年 | 数值换算基准，默认 360 游戏日 | `days_per_game_year` |
 | 游戏小时 | 服务器结算最小单位 | `world_hour` |
 | 宏观周期 | 季节、旬月、灾变期等内容刷新周期 | `macro_period_id` / `season_id` |
 | 服务器小时 tick | S1 推进一个游戏小时的结算步骤 | `hour_tick` |
@@ -82,6 +83,7 @@ save_writeback
 ```text
 server_tick_unit = hour
 hours_per_game_day = 24
+days_per_game_year = 360
 n1_real_seconds_per_game_hour = 15
 f1_real_seconds_per_game_day = 2
 b1_real_seconds_per_game_hour = 60
@@ -268,7 +270,48 @@ expires_when
 log_refs
 ```
 
-## 8. 回放与结果包字段
+## 8. 修炼数值、世界产出预算与阶段预算字段
+
+修炼数值主源为 `docs/systems-design/cultivation-realm-numeric-balance.md`。推荐字段：
+
+| 中文术语 | 含义 | 推荐字段 |
+| --- | --- | --- |
+| 境界段 | 从一个稳定修炼状态到下一个关键里程碑的最小数值成长段 | `RealmSegment` |
+| 境界段平衡表 | 修炼数值根表，定义目标时间、有效小时占比、阈值和效率边界 | `RealmSegmentBalance` |
+| 标准化境界段进度 | 当前段调参进度，默认 0.0-1.0+ | `normalized_segment_progress` |
+| 当前境界段 ID | 当前角色所处数值成长段 | `current_realm_segment_id` |
+| 修为点 | 表现值、阈值和日志映射，不直接线性等于战斗力 | `cultivation_points` |
+| 行动修炼效率模板 | 行动相对当前境界段基准的效率和策略字段 | `ActionCultivationProfile` |
+| 境界适配矩阵 | 功法、资源、设施、节点灵气和宗门支持的品阶 / 相性适配 | `RealmInputFitMatrix` |
+| 资源效果平衡 | 资源按基准兼容小时、贡献上限、压力和突破修正定价 | `ResourceEffectBalance` |
+| 状态压力模型 | 高效率修炼带来的经脉压力、伤势和心魔惩罚曲线 | `StatePressureModel` |
+| 节点境界支持 | 节点灵气、容量、消耗、再生、风险和机会窗口支持 | `NodeRealmSupport` |
+| 宗门支持平衡 | 宗门资源、设施、护法、功法、节点和情报支持 | `SectSupportBalance` |
+| 世界产出预算状态 | 世界资源、物品和机会投放的底层预算账本 | `WorldProductionBudgetState` |
+| 世界物品预算阶层 | 按阶级维护的物品生成预算帽 | `WorldItemBudgetTier` |
+| 世界资源投放预算 | 区域、节点、机会、稀有和后手资源的投放预算 | `WorldResourceBudget` |
+| 资源池 | 节点、区域或系统中的潜在产能 / 可采资源量，不是显性库存 | `ResourcePool` |
+| 预算价值 | 扣除世界生成预算使用的价值，不等于市场价格 | `BudgetValue` |
+| 资产生成请求 | 事件、采集、秘境、任务、交易或 NPC 掉落发起的生成请求 | `AssetGenerationRequest` |
+| 资产生成结果 | 资产生成成功 / 失败、预算扣除和目标容器记录 | `AssetGenerationResult` |
+| 阶段预算状态 | 当前世界稳定投放的最高资源阶段和预算池 | `WorldStageBudgetState` |
+| 境界预算池 | 单个境界阶段对底层世界产出预算的分配切片 | `RealmBudgetPool` |
+| 修炼 tick 结果 | 每小时修炼收益、效率、压力、资源消耗和调试公式明细 | `CultivationTickResult` |
+| 当前世代效率指数 | 当前世代相对境界段基准的推进效率 | `CEI` |
+
+必须避免：
+
+```text
+行动模板直接写死 raw 修为收益；
+资源直接无条件给角色修为；
+把阶段预算当成唯一预算或覆盖资源流转旧设定；
+阶段预算直接赠送修为；
+世界生成预算在出售、拆解、销毁、上交、损坏或消耗后返还；
+高于当前预算境界的 NPC 无来源晋升；
+寿元或事件门槛半强迫轮回。
+```
+
+## 9. 回放与结果包字段
 
 回放主结构：
 
@@ -310,7 +353,7 @@ TimelineReplay {
 每次 B1 交锋轮必须写入 formal_encounter_rounds。
 ```
 
-## 9. 内容模板字段
+## 10. 内容模板字段
 
 行动模板：
 
@@ -353,7 +396,7 @@ round_resource_consumption
 result_report_template
 ```
 
-## 10. Deprecated aliases 与迁移说明
+## 11. Deprecated aliases 与迁移说明
 
 | 旧术语 / 字段 | 当前处理 | 说明 |
 | --- | --- | --- |
@@ -366,7 +409,7 @@ result_report_template
 | 宗门主行动输入 / 主行动建议 / 宗门提案 | 移除 | 宗门 AI 自行维护 `SectContinuousActionState` |
 | 玩家侧未来跳转 | 移除 | 不做推进至下一事件、下一关键节点、月末等功能 |
 
-## 11. 新增字段准入规则
+## 12. 新增字段准入规则
 
 新增 schema、接口、存档字段或 UI 状态前，必须满足：
 
@@ -383,7 +426,7 @@ result_report_template
 
 若字段无法满足以上条件，需要先补充到本术语表或字段检查清单，再进入实现。
 
-## 12. 来源与裁决
+## 13. 来源与裁决
 
 吸收来源：
 
@@ -393,6 +436,7 @@ v2.3 04_字段命名与开发检查清单
 v2.3 01_运行时状态_数据模型_结果包
 v2.3 01_共享日历_房间推进_权威结算
 v2.3 08_事件突破战斗时间规则
+修为年限、境界收益与阶段预算数值设计
 ```
 
 参考来源：
@@ -412,3 +456,6 @@ v2.2 术语表、房间推进与冲突决议
 | `CommandQueue` 当前 + 3 后续 | `action_slot`、6 个朔望行动格、条件脚本 | 玩家只提交少量线性普通指令 |
 | `TimelineReplay` | `TurnReplay` / `QuarterReplay` | 连续日历需要记录速度片段和状态变化，而不是回合报告 |
 | `SectContinuousActionState` | `SectDecisionIntent`、宗门主行动输入 | 宗门由 AI 演化，玩家只间接影响 |
+| `RealmSegmentBalance` / `normalized_segment_progress` | 所有境界共用一个 raw CP 小时收益 | 境界段目标时间、资源适配和突破准备需要稳定调参单位 |
+| `WorldProductionBudgetState` | 资源、物品或机会无预算来源刷新 | 世界产出预算是底层投放账本，必须保留预算扣除、预留和日志 |
+| `WorldStageBudgetState` | 无来源高阶资源刷新、直接加修为或替代底层预算 | 阶段预算只做境界调度，实际投放必须落到底层预算、资源池和资产来源 |

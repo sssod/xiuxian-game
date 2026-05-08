@@ -71,6 +71,16 @@ FormalEncounterState
 SectContinuousActionState
 ActionResourceInputBinding
 ActiveResourceEffect
+RealmSegmentBalance
+normalized_segment_progress
+WorldProductionBudgetState
+WorldItemBudgetTier
+WorldResourceBudget
+ResourcePool
+BudgetValue
+WorldStageBudgetState
+RealmBudgetPool
+CultivationTickResult
 ```
 
 Key commitments:
@@ -82,6 +92,7 @@ Key commitments:
 - Sect gameplay is an organizational resource platform, not direct sect control by the player.
 - Multiplayer competition is mainly indirect through sects, nodes, resources, rumors, visibility, and opportunity windows.
 - Formal combat and breakthrough challenges use `FormalEncounterState` in B1; one B1 round equals 1 game hour.
+- World production budget is the underlying resource / item / opportunity generation ledger; stage budget is only the realm-based scheduling layer and must not replace resource flow, budget value, asset containers, or audit logs.
 
 Deprecated active concepts:
 

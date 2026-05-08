@@ -316,6 +316,21 @@ C1 追赶时将补结算确定性药性衰减与兼容小时。
 
 丹药、灵材、符箓和临时 boost 作为 `ActionResourceInputBinding` 绑定具体行动或事件选项。未消耗完的兼容小时或药性效果通过 `ActiveResourceEffect` 展示为残余效果，不作为默认独立行动。
 
+修炼行动预览默认展示玩家可理解的估算项，不默认暴露完整 CP 和公式：
+
+```text
+当前境界与小阶段；
+当前瓶颈状态；
+预计还需游戏时间；
+预计还需现实时间；
+本次行动预计有效修炼年收益；
+资源包贡献；
+经脉压力 / 心魔 / 伤势风险；
+是否具备 F1 条件。
+```
+
+高级详情或 Debug 面板可展示 `cultivation_points`、`normalized_segment_progress`、倍率明细、世界产出预算来源、阶段调度来源、资源包消耗记录、CP 转化结果和 CEI。
+
 ## 12. 日志与提醒入口
 
 日志分类：
@@ -408,6 +423,7 @@ docs/systems-design/events-breakthrough-combat-time-rules.md
 docs/systems-design/contingency-legacy-visibility-indirect-competition.md
 docs/systems-design/runtime-state-data-model-result-packages.md
 docs/production/mvp-delivery-slices-and-acceptance.md
+docs/systems-design/cultivation-realm-numeric-balance.md
 ```
 
 冲突比对来源：
@@ -429,5 +445,6 @@ v2.1 01_UIUX需求方案
 | 个人事件走局部时停 + C1 | 普通个人事件全局 P0 | 保留个人选择权，同时减少多人阻塞 |
 | 正式交锋与突破挑战走 B1 专用界面 | 普通队列内处理交锋轮，或突破多次 P0 | B1 每轮等于 1 游戏小时，资源消耗和默认策略可复盘 |
 | 显式托管、自动兜底、超时安全默认分离 | 托管 / 离线 / 兜底混用 | 三者来源、收益、F1 资格、事件处理权和日志不同 |
+| 修炼 UI 默认展示时间、有效收益和风险估算 | 默认暴露完整 CP 公式和所有倍率 | 玩家需要判断行动价值，完整公式属于高级详情或 Debug |
 | 普通玩家 UI 与 Debug 数据源分层 | Debug 世界日志玩家可见 | 多人隐私、可见性和调试审计必须分离 |
 | v2.3 稳定交互规则优先，Figma 只作后续布局参考 | 旧 Figma 状态帧作为当前规则权威 | v2.3 明确不绑定现有 Figma 主界面稿 |

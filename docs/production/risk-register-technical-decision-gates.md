@@ -59,8 +59,8 @@ C1 追赶只补确定性内容
 | 编号 | 事项 | 落地位置 | 检查点 |
 | --- | --- | --- | --- |
 | D01 | 行动模板基础字段 | 行动队列、运行时数据模型、MVP 验收 | 实际耗时、收益、风险曲线、`long_low_interaction`、`f1_eligible_when_explicit`、`can_be_auto_fallback`、`risk_sensitive_fallback` |
-| D02 | 修炼成长模型 | 角色真灵轮回与修炼养成 | 修为曲线、根骨承载、境界阈值、寿元影响、突破条件 |
-| D03 | 资源输入模板 | 经济物品、角色修炼、运行时数据模型 | `ActionResourceInputBinding` 样例、兼容小时、残余策略、`ActiveResourceEffect` |
+| D02 | 修炼成长模型 | 数值设计、角色真灵轮回与修炼养成 | `RealmSegmentBalance`、CP 阈值、`normalized_segment_progress`、寿元影响、突破条件、CEI |
+| D03 | 资源输入模板 | 数值设计、经济物品、角色修炼、运行时数据模型 | `ActionResourceInputBinding` 样例、兼容小时、`ResourceEffectBalance`、残余策略、`ActiveResourceEffect` |
 | D04 | 节点风险与资源刷新 | 地图节点与世界演化 | `risk_level` 判定、默认兜底行动、资源槽刷新 |
 | D05 | 闭关三档预案 | 角色修炼、事件突破战斗 | 风险阈值、收益修正、事件触发、局部时停 / B1 升级边界 |
 | D06 | 显式托管事件边界 | 行动队列、UI/UX 稳定需求 | 低价值事件白名单、重大事件通知规则、默认选项策略 |
@@ -69,6 +69,7 @@ C1 追赶只补确定性内容
 | D09 | 24 小时 gap 处理 | 共享日历、事件突破战斗 | 默认选项清单、P0 同步保护事件清单 |
 | D10 | C1 确定性白名单 | 共享日历、运行时数据模型 | 可补结算字段、禁止随机事件、结果包记录 |
 | D11 | UI 速度与隐私文案 | UI/UX 稳定需求 | 中性速度提示、私人归因屏蔽、Debug 分层文案 |
+| D12 | 世界产出预算、阶段调度与 NPC 成长 | 数值设计、地图节点、宗门、经济、运行时数据模型 | `WorldProductionBudgetState`、`WorldItemBudgetTier`、`WorldResourceBudget`、`ResourcePool`、`WorldStageBudgetState`、`RealmBudgetPool`、先锋资源泄漏、预算投放比例、NPC 预算后倍率、回放记录 |
 
 ## 4. 技术决策门
 
@@ -95,6 +96,7 @@ C1 追赶只补确定性内容
 | R07 | B1 拖慢非参战玩家 | 正式交锋会使全世界进入慢速 | 控制轮数、默认策略、硬上限与模板结局 | VS6、VS9、D07 |
 | R08 | 字段口径漂移 | 开发中容易出现多套时间、回放或行动字段 | 以术语表、字段检查清单和 QA 脚本为 schema 入口 | T01、T02、T04 |
 | R09 | UI 过度暴露调试信息 | Debug 字段进入玩家界面会影响多人体验 | 玩家 UI 与 Debug 面板数据源分层 | U09、T04 |
+| R10 | 阶段预算被做成自动奖励或唯一预算 | 预算打开如果直接给角色修为、无来源刷新高阶资源，或覆盖旧有资源流转预算，会破坏资源竞争和回放可信 | 世界产出预算保留底层账本；阶段预算只做境界调度；所有投放写入 `world_production_budget_delta` / `world_stage_budget_delta`、资产日志和可见性层 | D12、VS5、VS9 |
 
 ## 6. 验收关注点
 

@@ -4,7 +4,7 @@
 更新日期：2026-05-08
 适用范围：`docs` 正式目录，不含 `docs/inbox` 原始档案
 
-本文记录 canonical 文档集的新增、删除、改名、拆分与合并。它只维护“正式文档结构”的变化；具体设计口径仍以 `docs/index.md` 中列出的 canonical 文档及各文档的“来源与裁决”段为准。
+本文记录 canonical 文档集的新增、删除、改名、拆分、合并，以及重要设计口径修订。具体设计口径仍以 `docs/index.md` 中列出的 canonical 文档及各文档的“来源与裁决”段为准。
 
 ## 维护规则
 
@@ -12,11 +12,65 @@
 2. 新增、删除、改名、拆分或合并 canonical 文档时，必须同步更新本文与 `docs/index.md`。
 3. “删除”指退出正式 canonical 文档集，不代表从 `docs/inbox` 物理删除原始档案。
 4. 若一个 inbox 原文档被吸收到多个正式文档，记录为“合并 / 拆分”，不再保留平行文档。
-5. 目录 README、迁移计划、索引和本文属于维护文档；除非 `docs/index.md` 明确列入“当前 canonical 文档”，否则不作为设计口径主源。
+5. 重要设计口径修订即使不新增或改名文档，也必须记录到本文；是否需要同步 `docs/index.md` 取决于 canonical 文档集是否变化。
+6. 目录 README、迁移计划、索引和本文属于维护文档；除非 `docs/index.md` 明确列入“当前 canonical 文档”，否则不作为设计口径主源。
 
 ---
 
 ## 2026-05-08
+
+### 世界产出预算与资源流转旧设定恢复
+
+本次为 canonical 文档设计口径修订，不新增或改名文档。修订背景：旧版经济、地图、物品产出和 NPC 库存文档中的世界产出预算、资源流转、物品预算帽、资源投放预算、资源池、预算价值和非返还规则在数值文档整合时被阶段预算表述覆盖得过窄；本次恢复为“底层世界产出预算 + 阶段预算境界调度”的统一口径。
+
+补充来源：
+
+```text
+docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424/核心体验｜设计基石/物品产出与获得的核心体验草稿 0426｜人工参与编辑 34edffce59dc81318c81c9a7a6027fd6.md
+docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424/修仙轮回沙盒｜项目总览与顶层设计定案 0424/S8｜地图节点、资源槽与建筑槽子系统设计案 0425｜未人工审核/沙盒世界演化与地图节点生成规则草稿 0427｜人工参与编辑 34fdffce59dc815d91d1d3d145b92e03.md
+docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424/核心体验｜设计基石/经济系统框架性设计草稿 0427｜人工参与编辑 34fdffce59dc816abe2ed699d8a6d447.md
+docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424/核心体验｜设计基石/NPC持久化、库存与经济定位框架草稿 0426｜人工参与编辑 34edffce59dc818cb57ac7248e6e14d9.md
+```
+
+| 修订文档 | 变更说明 |
+| --- | --- |
+| `docs/systems-design/cultivation-realm-numeric-balance.md` | 将阶段预算修订为世界产出预算的境界调度层；恢复 `WorldProductionBudgetState`、`WorldItemBudgetTier`、`WorldResourceBudget`、`BudgetValue`、预算扣除时机和非返还规则。 |
+| `docs/systems-design/map-nodes-world-evolution.md` | 恢复 `WorldResourceBudget` 的地图层口径，明确 stable / opportunity / rare / legacy 四类资源投放预算与资源槽、机会窗口的关系。 |
+| `docs/systems-design/economy-items-assets-npc-persistence.md` | 补回 `ResourcePool`、`AssetGenerationRequest`、`AssetGenerationResult`、预算价值、隐性候选不扣预算、显性入库扣预算、NPC 掉落来源链路。 |
+| `docs/systems-design/sect-organization-inventory-ai.md` | 将宗门库存预算表述修订为世界产出预算的宗门出口，阶段预算只控制境界可得性与扩散节奏。 |
+| `docs/systems-design/runtime-state-data-model-result-packages.md` | 增加 `world_production_budget_state`、`world_production_budget_delta`、`asset_generation_records`、`budget_ledger_entries` 和 `resource_pools`，区分底层预算账本与阶段调度 delta。 |
+| `docs/references/glossary-and-field-naming.md` | 新增世界产出预算、物品预算阶层、资源投放预算、资源池、预算价值、资产生成请求 / 结果字段，并记录禁止把阶段预算当成唯一预算。 |
+| `docs/index.md`、`docs/systems-design/README.md` | 同步核心设计合同和文档入口描述。 |
+| `docs/production/risk-register-technical-decision-gates.md`、`docs/production/mvp-delivery-slices-and-acceptance.md`、`docs/ui-design/uiux-stable-requirements.md`、`docs/systems-design/shared-calendar-room-settlement.md` | 同步风险、验收、Debug 展示和时间换算中的预算口径。 |
+
+### 数值设计 canonical 文档新增与系统口径补充
+
+本次新增正式 canonical 数值设计文档，并将两个 inbox 数值稿中影响系统设定的部分同步到相关 canonical 文档。`docs/index.md` 已同步新增文档入口。
+
+基准来源：
+
+```text
+docs/inbox/修仙游戏设计方案总目录/数值设计/修为年限_现实时间_阶段预算数值方案_v0 1 35adffce59dc8036907fde811054d5c6.md
+docs/inbox/修仙游戏设计方案总目录/数值设计/核心数值设计方案_境界基准收益模型_v0 1 359dffce59dc80bf856ad8241dfdee39.md
+```
+
+| 修订文档 | 变更说明 |
+| --- | --- |
+| `docs/systems-design/cultivation-realm-numeric-balance.md` | 新增 canonical 数值主源；以修为年限、现实时间、阶段预算方案为基准，吸收境界段模型、基准收益反推、适配矩阵、资源效果定价、状态压力、突破承接和轮回效率判断。 |
+| `docs/index.md` | 新增数值设计 canonical 入口，并将 `RealmSegmentBalance`、`normalized_segment_progress`、`WorldStageBudgetState`、`RealmBudgetPool`、`CultivationTickResult` 纳入核心设计合同。 |
+| `docs/systems-design/README.md` | 新增数值设计文档目录入口。 |
+| `docs/references/glossary-and-field-naming.md` | 新增游戏年换算、修炼数值与阶段预算字段术语，记录新增字段裁决。 |
+| `docs/systems-design/shared-calendar-room-settlement.md` | 补充 `1 游戏年 = 360 游戏日` 为数值换算基准，不改变 `hour_tick` 运行时事实。 |
+| `docs/systems-design/runtime-state-data-model-result-packages.md` | 补充预算、游戏年、修炼结果、结果包、存档和回放接口；预算口径后续修订为 `WorldProductionBudgetState` 底层账本 + `WorldStageBudgetState` 阶段调度。 |
+| `docs/systems-design/character-true-spirit-reincarnation-cultivation.md` | 补充 `current_realm_segment_id`、`normalized_segment_progress`、`CultivationTickResult`、CEI 和境界段收益结算接口。 |
+| `docs/systems-design/personal-command-queue-movement-managed-actions.md` | 补充 `ActionCultivationProfile`，明确行动只提供相对效率，不写死 raw 修为收益。 |
+| `docs/systems-design/events-breakthrough-combat-time-rules.md` | 补充突破开启条件与 `BreakthroughScoreBalance` 初始分承接，保持最终结果由 B1 轮内结算。 |
+| `docs/systems-design/map-nodes-world-evolution.md` | 补充 `NodeRealmSupport`、阶段预算对资源槽和机会窗口的投放规则。 |
+| `docs/systems-design/economy-items-assets-npc-persistence.md` | 补充 `ResourceEffectBalance` 和预算作为资产与机会来源的审计要求；预算口径后续修订为世界产出预算底层账本 + 阶段调度。 |
+| `docs/systems-design/sect-organization-inventory-ai.md` | 补充阶段预算对宗门库存、任务、护法和功法载体可得性的影响，保持资源申请审批和审计合同。 |
+| `docs/production/risk-register-technical-decision-gates.md` | 更新 D02 / D03，并新增 D12 与 R10，跟踪阶段预算和 NPC 成长调参风险。 |
+| `docs/production/mvp-delivery-slices-and-acceptance.md` | 补充 VS3、VS4、VS6 对数值模型、阶段预算和突破初始分的验收要求。 |
+| `docs/ui-design/uiux-stable-requirements.md` | 补充修炼行动预览默认展示时间、有效收益和风险估算，高级详情 / Debug 才展示完整数值公式。 |
 
 ### 核心体验目标口径修订
 

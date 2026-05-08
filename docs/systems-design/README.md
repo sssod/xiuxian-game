@@ -8,6 +8,7 @@
 - [personal-command-queue-movement-managed-actions.md](personal-command-queue-movement-managed-actions.md)：个人行动队列、移动通行与托管。
 - [events-breakthrough-combat-time-rules.md](events-breakthrough-combat-time-rules.md)：事件、突破与战斗时间规则。
 - [character-true-spirit-reincarnation-cultivation.md](character-true-spirit-reincarnation-cultivation.md)：角色、真灵、轮回与修炼养成。
+- [cultivation-realm-numeric-balance.md](cultivation-realm-numeric-balance.md)：修为年限、境界收益与世界产出预算阶段调度。
 - [sect-organization-inventory-ai.md](sect-organization-inventory-ai.md)：宗门组织、库存与宗门 AI 持续行动。
 - [map-nodes-world-evolution.md](map-nodes-world-evolution.md)：地图节点与沙盒世界演化。
 - [economy-items-assets-npc-persistence.md](economy-items-assets-npc-persistence.md)：经济、物品、资产容器与 NPC 持久化。

@@ -96,6 +96,8 @@ C1 追赶期间不触发新随机事件。
 闭关修炼；
 吐纳；
 养伤；
+RealmSegmentBalance 首版；
+normalized_segment_progress；
 功法完整载体学习；
 MethodState 掌握度成长；
 闭关三档预案；
@@ -112,6 +114,7 @@ ActiveResourceEffect。
 严重闭关异常进入局部时停或 B1；
 小境界选择作为普通个人事件处理，gap≤1日；
 修炼资源输入按兼容小时结算，局部时停时玩家自身药性衰减暂停。
+修炼 tick 能输出 normalized_gain、cultivation_points_gain、效率倍率、经脉压力和资源消耗明细。
 ```
 
 ## 5. VS4：宗门资源平台与 AI
@@ -125,6 +128,7 @@ SectContinuousActionState；
 宗门 AI 按 world_hour 推进；
 资源申请；
 贡献与职位影响；
+世界产出预算经阶段调度进入宗门库存 / 任务 / 护法支持；
 宗门传闻和公开日志。
 ```
 
@@ -135,6 +139,7 @@ SectContinuousActionState；
 宗门 AI 可在没有玩家直接命令时推进；
 玩家可通过个人行动、贡献、职位、NPC 关系和事件结果影响宗门；
 宗门资源申请进入个人行动或事件结果包；
+世界产出预算 / 阶段调度只提高资源可得性，不自动批准申请或赠送修为；
 宗门 AI 步骤进入 TimelineReplay.sect_ai_steps。
 ```
 
@@ -147,6 +152,7 @@ SectContinuousActionState；
 ```text
 突破准备期作为普通长期行动；
 开启突破指令合法性校验；
+BreakthroughScoreBalance 首版；
 当前已满足条件时才可预输入开启突破；
 未预设时弹出局部时停确认；
 默认选项为取消突破并进入休整；
@@ -161,6 +167,7 @@ B1：1轮=1小时，60秒提交窗口；
 
 ```text
 未达突破条件时，开启突破不可入队；
+达标必须同时校验 normalized_segment_progress、功法掌握、根基、经脉压力、伤势、心魔、地点和资源；
 已达条件且地点、状态、道具合法时，开启突破可入队；
 执行前道具缺失时，突破指令失败，不消耗道具，进入兜底并降 N1；
 突破挑战开始后世界 B1；

@@ -71,9 +71,12 @@ RuntimeWorldState {
   character_states: Dictionary
   cultivation_states: Dictionary
   method_states: Dictionary
+  world_production_budget_state: WorldProductionBudgetState
+  world_stage_budget_state: WorldStageBudgetState
   sect_states: Dictionary
   world_map_state: WorldMapState
   npc_states: Dictionary
+  resource_pools: Dictionary
   asset_containers: Dictionary
   item_instances: Dictionary
   active_resource_effects: Dictionary
@@ -94,6 +97,7 @@ RuntimeWorldState {
 2. 子系统内部可拆分存储，但对 S1 合并结果包时必须能提供一致快照。
 3. 临时 UI 状态、悬停、筛选、面板展开状态不进入权威运行时状态。
 4. 可重建缓存可以保存，但必须标记为缓存，并能从权威状态重建。
+5. `world_production_budget_state` 是世界产出预算底层账本；`world_stage_budget_state` 是境界阶段调度层，不能替代资源流转预算、资源池和资产生成记录。
 
 ## 4. RoomState
 
@@ -153,6 +157,7 @@ save_writeback
 TimeConfig {
   server_tick_unit: String
   hours_per_game_day: int
+  days_per_game_year: int
 
   speed_profiles: Dictionary
   n1_real_seconds_per_game_hour: int
@@ -175,6 +180,7 @@ TimeConfig {
 ```text
 server_tick_unit = hour
 hours_per_game_day = 24
+days_per_game_year = 360
 n1_real_seconds_per_game_hour = 15
 f1_real_seconds_per_game_day = 2
 b1_real_seconds_per_game_hour = 60
@@ -187,6 +193,8 @@ enable_player_side_future_jump = false
 ```
 
 实现不得把公开速度配置转换成客户端未来跳转能力。F1 仍是服务端连续 `hour_tick` 压缩推进。
+
+`days_per_game_year` 是修为年限、寿元展示和阶段预算的数值换算基准，不得作为独立结算粒度或玩家排期单位。
 
 ## 6. SpeedState
 
@@ -615,6 +623,9 @@ ResultPackage {
   character_delta: Dictionary
   inventory_delta: Dictionary
   resource_effect_delta: Dictionary
+  cultivation_tick_results: Array
+  world_production_budget_delta: Dictionary
+  world_stage_budget_delta: Dictionary
   node_delta: Dictionary
   sect_delta: Dictionary
   route_delta: Dictionary
@@ -627,6 +638,8 @@ ResultPackage {
   global_pause_delta: Dictionary
 
   triggered_child_events: Array
+  asset_generation_records: Array
+  budget_ledger_entries: Array
   ledger_entries: Array
   visible_log_entries: Array
   hidden_world_log_entries: Array
@@ -654,7 +667,12 @@ relationship_delta
 npc_delta
 event_window_delta
 risk_level_delta
+world_production_budget_delta
+world_stage_budget_delta
+cultivation_tick_results
 asset_transfer_records
+asset_generation_records
+budget_ledger_entries
 resource_use_records
 reservation_records
 contingency_delta
@@ -670,6 +688,7 @@ trade_records
 4. 速度变化必须记录 `speed_before / speed_after`。
 5. 私人信息和 Debug 信息必须进入对应日志层，不得混入公开日志。
 6. 子系统不得直接写其他系统权威状态，只能提交 delta。
+7. 资源或物品由世界产出预算生成时，必须同时提交 `world_production_budget_delta`、`asset_generation_records` 或 `budget_ledger_entries`；`world_stage_budget_delta` 只记录境界调度变化。
 
 ## 14. 子系统输出合同
 
@@ -678,11 +697,11 @@ trade_records
 | 系统 | 主要输出 |
 | --- | --- |
 | S1 共享日历 / 房间结算 | `speed_segments`、`settlement_steps`、`result_packages`、`global_pause_delta` |
-| S2 角色 / 真灵 / 修炼 | `character_delta`、`resource_effect_delta`、`ledger_entries`、`visibility_delta` |
+| S2 角色 / 真灵 / 修炼 | `character_delta`、`cultivation_tick_results`、`resource_effect_delta`、`ledger_entries`、`visibility_delta` |
 | S3 行动队列 / 移动 / 托管 | `command_delta`、`fallback_delta`、`route_delta`、`visible_log_entries` |
-| S4 地图 / 世界演化 | `node_delta`、`route_delta`、`resource_slot_delta`、`event_window_delta`、`rumor_entries` |
-| S5 宗门 / 库存 / AI | `sect_delta`、`inventory_delta`、`reservation_records`、`node_delta`、`rumor_entries` |
-| S6 经济 / 物品 / NPC | `inventory_delta`、`currency_delta`、`resource_effect_delta`、`asset_transfer_records`、`npc_delta` |
+| S4 地图 / 世界演化 | `node_delta`、`route_delta`、`resource_slot_delta`、`event_window_delta`、`world_production_budget_delta`、`world_stage_budget_delta`、`rumor_entries` |
+| S5 宗门 / 库存 / AI | `sect_delta`、`inventory_delta`、`reservation_records`、`world_production_budget_delta`、`world_stage_budget_delta`、`node_delta`、`rumor_entries` |
+| S6 经济 / 物品 / NPC | `inventory_delta`、`currency_delta`、`resource_effect_delta`、`asset_transfer_records`、`asset_generation_records`、`budget_ledger_entries`、`npc_delta`、`world_production_budget_delta`、`world_stage_budget_delta` |
 | S7 后手 / 遗产 / 可见性 | `contingency_delta`、`legacy_delta`、`visibility_delta`、`rumor_entries` |
 | S8 事件 / 突破 / 战斗 | `event_outcomes`、`formal_encounter_delta`、`character_delta`、`triggered_child_events` |
 
@@ -765,9 +784,13 @@ SaveGame {
   player_states: Dictionary
   true_spirit_states: Dictionary
   character_states: Dictionary
+  cultivation_states: Dictionary
   world_map_state: WorldMapState
+  world_production_budget_state: WorldProductionBudgetState
+  world_stage_budget_state: WorldStageBudgetState
   sect_states: Dictionary
   npc_states: Dictionary
+  resource_pools: Dictionary
   asset_containers: Dictionary
   active_resource_effects: Dictionary
   contingency_records: Dictionary
@@ -785,6 +808,8 @@ SaveGame {
 method_states
 item_instances
 legacy_records
+world_production_budget_state
+world_stage_budget_state
 visibility_states
 event_states
 formal_encounter_states
@@ -807,8 +832,12 @@ GlobalPauseState
 TimelineReplay index
 world_day / world_hour / macro_period_id
 角色与真灵
+修炼状态与 normalized_segment_progress
+WorldProductionBudgetState
+WorldStageBudgetState
 宗门 AI 当前持续行动
 地图节点、资源槽、秘境窗口
+ResourcePool 与资产生成预算记录
 ActiveResourceEffect
 资产容器与物品
 后手与遗产
@@ -1155,6 +1184,9 @@ v2.3 06_经济物品资产_NPC持久化
 v2.3 07_后手遗产_可见性_多人间接竞争
 v2.3 02_MVP开发切片与验收清单
 v2.3 05_原始文档映射与来源索引
+修为年限、境界收益与阶段预算数值设计
+经济、物品、资产容器与 NPC 持久化
+地图节点与沙盒世界演化
 ```
 
 参考来源：
@@ -1175,6 +1207,7 @@ v2.2 数据驱动_存档_服务端调试
 | `TimeConfig` / `SpeedState` | `TurnConfig` / 旧回合倒计时 | 速度档位、gap、C1 和 B1 轮都需要统一配置 |
 | `Command` / `CommandQueue` | `PersonalActionInstruction`、行动格队列 | 玩家只提交当前 + 最多 3 条预输入 |
 | `ResultPackage` 作为子系统输出单位 | 子系统直接写世界状态 | S1 统一合并，便于日志、存档、回放和调试 |
+| `WorldProductionBudgetState` 与 `WorldStageBudgetState` 同时进入运行时 / 结果包 | 把阶段预算当成唯一预算或只存在静态表 | 世界产出预算、阶段激活、NPC 成长、修炼收益和资源消耗都必须可保存、可回放、可调试 |
 | `TimelineReplay` | `TurnReplay` / `QuarterReplay` | 回放按连续时间片段和速度变化记录 |
 | `SaveGame` 保存权威状态与 replay index | 存 UI 临时态或只存回合报告 | 私人服务器和本地单测都需要可恢复、可复盘 |
 | 日志按可见性分层 | 世界日志全量公开 | 多人间接竞争依赖私人归因隔离 |

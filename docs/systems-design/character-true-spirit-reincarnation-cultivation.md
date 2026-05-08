@@ -100,6 +100,8 @@ CultivationState {
   character_id: String
   realm: String
   minor_stage: String
+  current_realm_segment_id: String
+  normalized_segment_progress: number
   cultivation_points: number
   bottleneck_state: none | approaching | reached
   foundation_quality: number
@@ -126,6 +128,37 @@ ActiveResourceEffect；
 ```
 
 修炼收益、经脉压力、资源灵气输入和状态变化必须按 `world_hour` 结算。
+
+数值模型接口：
+
+```text
+RealmSegmentBalance 是修炼成长根表；
+normalized_segment_progress 是当前境界段调参进度；
+cultivation_points 是表现值、阈值和日志映射；
+compatible_hour_benchmark_rate 由目标达成时间和有效修炼小时占比反推；
+每小时修炼收益由行动、资质、功法、掌握度、节点灵气、设施、资源、宗门支持、状态压力和机会窗口共同修正；
+修正倍率必须受当前 RealmSegment 的 min_efficiency_ratio / max_efficiency_ratio 限制。
+```
+
+每次修炼结算应输出 `CultivationTickResult` 或等价明细，记录：
+
+```text
+segment_id；
+compatible_hours；
+base_benchmark_rate；
+raw_efficiency_ratio；
+clamped_efficiency_ratio；
+normalized_gain；
+cultivation_points_gain；
+normalized_segment_progress_before / after；
+meridian_pressure_delta；
+method_mastery_delta；
+resource_effects_consumed；
+node_aura_effect；
+facility_effect；
+sect_support_effect；
+debug_formula_trace。
+```
 
 ## 6. 功法与掌握度
 
@@ -274,6 +307,8 @@ ReincarnationRecord；
 继续硬冲、降低品质目标、冒险抢窗口、布置后手或轮回，哪一种更服务更高境界追求。
 ```
 
+当前世代效率指数 `CEI` 可作为轮回提示和继续可行性的调试 / 高级字段。`CEI` 低于当前 `RealmSegment` 的低效阈值时，轮回应提供明显效率修正价值；`CEI` 高于高效阈值时，寿元和事件门槛不得半强迫轮回。
+
 ## 11. 后手与轮回账本接口
 
 S2 只定义角色与真灵侧接口，后手、遗产、可见性和多人竞争的详细规则由后续 canonical 文档承载。
@@ -325,13 +360,14 @@ UI 应清楚分辨：
 1. `TrueSpiritState` 与 `CharacterState` 分层保存。
 2. 当世角色死亡后真灵仍保留轮回账本和已知后手索引。
 3. 修炼收益按 `world_hour` 与实际兼容小时结算。
-4. 完整功法载体才能生成 `MethodState`。
-5. 残页 / 章节不能作为运行时学习进度。
-6. 丹药、灵材、符箓作为 `ActionResourceInputBinding` 进入行动或事件。
-7. 未消耗完资源效果进入 `ActiveResourceEffect`。
-8. 小境界选择走个人局部时停 + C1。
-9. 大境界突破走 `FormalEncounterState` B1。
-10. 死亡与转世写入 `LifeLedger`、`ReincarnationRecord` 和 `TimelineReplay`。
+4. 修炼状态包含 `current_realm_segment_id` 与 `normalized_segment_progress`，并能映射到 `cultivation_points`。
+5. 完整功法载体才能生成 `MethodState`。
+6. 残页 / 章节不能作为运行时学习进度。
+7. 丹药、灵材、符箓作为 `ActionResourceInputBinding` 进入行动或事件。
+8. 未消耗完资源效果进入 `ActiveResourceEffect`。
+9. 小境界选择走个人局部时停 + C1。
+10. 大境界突破走 `FormalEncounterState` B1。
+11. 死亡与转世写入 `LifeLedger`、`ReincarnationRecord` 和 `TimelineReplay`。
 
 ## 14. Deprecated aliases 与迁移说明
 
@@ -368,6 +404,7 @@ v2.2 事件突破战斗
 修为修炼公式_资源输入与丹药药性处理补充_v0.2
 功法系统_收敛设定汇总_v0.4
 核心数值设计方案_境界基准收益模型_v0.1
+修为年限、境界收益与阶段预算数值设计
 玩家角色扮演核心体验｜真灵-执念-身躯与灵魂三层模型 0·425
 ```
 
@@ -377,7 +414,9 @@ v2.2 事件突破战斗
 | --- | --- | --- |
 | 当世修为主线与真灵连续性分层 | 玩家控制固定角色、宗门本体，或把轮回本身作为终局目标 | 当世角色承载修为、境界和现实后果；真灵承载账本、执念容量、后手和跨世线索 |
 | 修炼按 `world_hour` 与兼容小时结算 | 回合修炼预算 | 连续日历下收益、资源输入和残余效果必须可按小时复盘 |
+| `normalized_segment_progress` 作为调参进度，CP 作为表现值 | 直接用 CP 膨胀值调全部境界曲线 | 境界段目标时间、资源适配和突破准备需要稳定进度单位 |
 | 完整功法载体生成 `MethodState` | 残篇 / 章节直接作为学习进度 | 避免内容资产与运行时进度混淆 |
 | 丹药等作为 `ActionResourceInputBinding` | 丹药炼化默认独立持续行动 | 与行动队列和资源输入合同一致 |
 | 大境界突破走 B1 `FormalEncounterState` | 突破多次 P0 或单次概率按钮 | 突破资源消耗、策略和结果必须可轮内复盘 |
 | 死亡转世写入 `LifeLedger` / `ReincarnationRecord` | 死亡后简单重开，或用寿元 / 事件门槛半强迫轮回 | 失败需要转化为下一世信息、后手和修正方向，并继续服务更高境界追求 |
+| CEI 低效判断作为轮回价值提示 | 寿元或事件难度硬逼轮回 | 轮回应修正低效率世代，高效率世代继续修行必须合理 |

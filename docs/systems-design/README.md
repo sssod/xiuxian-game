@@ -11,8 +11,10 @@
 - [sect-organization-inventory-ai.md](sect-organization-inventory-ai.md)：宗门组织、库存与宗门 AI 持续行动。
 - [map-nodes-world-evolution.md](map-nodes-world-evolution.md)：地图节点与沙盒世界演化。
 - [economy-items-assets-npc-persistence.md](economy-items-assets-npc-persistence.md)：经济、物品、资产容器与 NPC 持久化。
+- [contingency-legacy-visibility-indirect-competition.md](contingency-legacy-visibility-indirect-competition.md)：后手、遗产、可见性与多人间接竞争。
+- [runtime-state-data-model-result-packages.md](runtime-state-data-model-result-packages.md)：运行时状态、数据模型与结果包。
 
-后续可迁移：
+第三批剩余跨目录迁移：
 
-- 后手遗产、可见性与多人间接竞争。
-- 运行时状态、数据模型与结果包。
+- UI/UX 稳定需求应进入 `docs/ui-design`。
+- 风险登记与技术决策门应进入 `docs/production`。

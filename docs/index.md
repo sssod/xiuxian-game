@@ -30,6 +30,8 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 | 宗门组织、库存与宗门 AI 持续行动 | [systems-design/sect-organization-inventory-ai.md](systems-design/sect-organization-inventory-ai.md) |
 | 地图节点与沙盒世界演化 | [systems-design/map-nodes-world-evolution.md](systems-design/map-nodes-world-evolution.md) |
 | 经济、物品、资产容器与 NPC 持久化 | [systems-design/economy-items-assets-npc-persistence.md](systems-design/economy-items-assets-npc-persistence.md) |
+| 后手、遗产、可见性与多人间接竞争 | [systems-design/contingency-legacy-visibility-indirect-competition.md](systems-design/contingency-legacy-visibility-indirect-competition.md) |
+| 运行时状态、数据模型与结果包 | [systems-design/runtime-state-data-model-result-packages.md](systems-design/runtime-state-data-model-result-packages.md) |
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
 
 ## 正式目录

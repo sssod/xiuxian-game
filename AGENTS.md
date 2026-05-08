@@ -17,8 +17,8 @@ The v2.3 document migration into formal `docs` sections is complete. `docs/refer
 Default entry points:
 
 1. `docs/index.md` for the canonical document map.
-2. Formal docs outside `docs/inbox` for active design, UI, systems, production, and reference decisions.
-3. `docs/inbox` only as raw source archive, provenance evidence, conflict history, or recovery material.
+2. Canonical docs listed by `docs/index.md` for active design, UI, systems, production, and reference decisions.
+3. `docs/CHANGELOG.md` for canonical document change records.
 
 Current work mode remains design finalization, documentation maintenance, and development handoff preparation. Unless the user explicitly asks for implementation, do not modify gameplay, runtime, backend, frontend, database, deployment, or other source code.
 
@@ -38,28 +38,19 @@ When documents conflict, prefer this order:
 
 ```text
 AGENTS.md
--> docs/index.md and formal docs outside docs/inbox
+-> docs/index.md and canonical docs listed there
 -> current UI artifact / Figma, for node-level UI layout and component placement
--> v2.3 raw package, for provenance checks or gaps not yet covered by formal docs
--> supplemental inbox notes explicitly aligned with v2.3
--> older imported historical documents and files marked [已过时]
 -> CLAUDE.md compatibility notes
 ```
 
-Latest raw design source:
-
-```text
-docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_v2 3/
-```
-
-If a formal document exists for a topic, update it instead of creating a parallel document or editing the inbox export. Read the v2.3 README and relevant raw source when resolving conflicts, checking provenance, or filling a gap not already covered by the formal docs.
+If a canonical document exists for a topic, update it instead of creating a parallel document. When canonical documents conflict, resolve the conflict in the relevant canonical document and record the decision in that document's source /裁决 section when appropriate.
 
 ## Documentation Rules
 
-- Keep `docs/inbox` as an archive unless the user explicitly asks to reorganize it.
 - Prefer one canonical document per topic in the formal docs.
 - Preserve Chinese project terminology in design docs unless a file clearly uses English.
-- Keep design changes traceable to the v2.3 package or explicitly mark them as new decisions.
+- Keep design changes traceable in the edited canonical document; explicitly mark new decisions when they are not simple restatements of existing canonical policy.
+- Every change to canonical docs must be recorded in `docs/CHANGELOG.md` in the same work session, including design口径修订 that do not add, delete, rename, split, or merge documents.
 - Record implementation implications as notes, acceptance constraints, risks, open questions, or technical decision gates unless implementation is explicitly requested.
 - Do not reintroduce deprecated terms as active concepts.
 - Record only stable UI decisions in formal docs; node-level layout and component placement belong to the current UI artifact / Figma.

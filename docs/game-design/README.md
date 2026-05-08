@@ -4,10 +4,12 @@
 
 当前状态：
 
-- 首批迁移尚未在本目录建立 canonical 文档。
+- 玩家行动队列的 implementation-facing canonical 文档已落在 [../systems-design/personal-command-queue-movement-managed-actions.md](../systems-design/personal-command-queue-movement-managed-actions.md)，避免与系统契约重复。
+- 事件、突破、战斗时间规则的 implementation-facing canonical 文档已落在 [../systems-design/events-breakthrough-combat-time-rules.md](../systems-design/events-breakthrough-combat-time-rules.md)。
+- 角色、真灵、轮回与修炼养成的 implementation-facing canonical 文档已落在 [../systems-design/character-true-spirit-reincarnation-cultivation.md](../systems-design/character-true-spirit-reincarnation-cultivation.md)。
 
 后续可迁移：
 
-- 个人行动队列与玩家操作流。
-- 事件、突破、战斗的玩家体验规则。
-- 死亡、转世与跨世成长循环。
+- 房间流程、玩家操作流与阶段摘要。
+- 事件、突破、战斗的纯玩家体验解读。
+- 死亡、转世与跨世成长循环的玩家侧流程。

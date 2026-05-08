@@ -15,14 +15,18 @@ docs/inbox/修仙游戏设计方案总目录/修仙轮回沙盒_设计文档包_
 
 正式文档已开始从 v2.3 主源迁移。旧版本和 `[已过时]` 文件仅用于冲突比对、来源追溯和背景补充。
 
-## 首批 canonical 文档
+## 当前 canonical 文档
 
 | 主题 | 文档 |
 | --- | --- |
 | 文档架构与迁移计划 | [references/document-consolidation-plan.md](references/document-consolidation-plan.md) |
 | 项目总览、MVP 边界与系统依赖 | [concept/project-overview-mvp-scope.md](concept/project-overview-mvp-scope.md) |
+| 核心体验、玩家目标与设计基石 | [concept/core-experience-player-goals-pillars.md](concept/core-experience-player-goals-pillars.md) |
 | 术语表、命名规范与字段统一 | [references/glossary-and-field-naming.md](references/glossary-and-field-naming.md) |
 | 共享日历、房间推进与权威结算 | [systems-design/shared-calendar-room-settlement.md](systems-design/shared-calendar-room-settlement.md) |
+| 个人行动队列、移动通行与托管 | [systems-design/personal-command-queue-movement-managed-actions.md](systems-design/personal-command-queue-movement-managed-actions.md) |
+| 事件、突破与战斗时间规则 | [systems-design/events-breakthrough-combat-time-rules.md](systems-design/events-breakthrough-combat-time-rules.md) |
+| 角色、真灵、轮回与修炼养成 | [systems-design/character-true-spirit-reincarnation-cultivation.md](systems-design/character-true-spirit-reincarnation-cultivation.md) |
 | MVP 开发切片与验收清单 | [production/mvp-delivery-slices-and-acceptance.md](production/mvp-delivery-slices-and-acceptance.md) |
 
 ## 正式目录

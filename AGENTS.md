@@ -29,6 +29,7 @@ Source handling for the inbox calibration work:
 - Canonical docs listed by `docs/index.md` have higher trust as extracted active design documents, but they may have lost details during extraction. Treat missing details, ambiguity, or uncertainty as expected calibration work, not as proof that the detail is invalid.
 - Fill missing or ambiguous details from user-provided clarification and from `docs/inbox` when the source material does not create an unresolved conflict.
 - `docs/inbox/xiuxian_design_reorganized_md` contains the documents previously targeted for calibration. Their information has value and should be treated as similar in trust level to other inbox files, while still checking for duplicated, stale, or conflicting statements.
+- Special rule for calibrating `docs/inbox/xiuxian_design_reorganized_md`: this rule overrides the general source-handling bullets above for this directory. The calibrated documents in this directory must be self-contained. They may rely on user-provided decisions in the current work session and on files within `docs/inbox/xiuxian_design_reorganized_md`, but must exclude all sources outside that directory as document dependencies or cited sources. Do not leave references that require canonical docs, other inbox files, Figma, or external material to interpret these documents.
 - Pay special attention to `docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424` and the four root-level inbox setting documents:
   - `docs/inbox/功法系统_收敛设定汇总_v0.4.md`
   - `docs/inbox/自适应流速可暂停日历制 v2：阶段性时间规则.md`

@@ -10,9 +10,9 @@ This file applies to the `xiuxian-game` project root. Do not use files outside t
 
 ## Current Status
 
-Checked on 2026-05-08.
+Checked on 2026-05-10.
 
-The v2.3 document migration into formal `docs` sections is complete. `docs/references/document-consolidation-plan.md` records “第三批迁移完成” and “第三批剩余建议迁移：无”.
+The v2.3 document migration into formal `docs` sections is complete. 
 
 Default entry points:
 
@@ -22,15 +22,20 @@ Default entry points:
 
 Current work mode remains design finalization, documentation maintenance, and development handoff preparation. Unless the user explicitly asks for implementation, do not modify gameplay, runtime, backend, frontend, database, deployment, or other source code.
 
-## Project Purpose
+Current near-term focus is inbox design calibration: use `docs/inbox`, including `docs/inbox/xiuxian_design_reorganized_md`, and the extracted canonical design documents listed by `docs/index.md` to supplement and complete missing details, unify field names and design, and prepare the most accurate and up-to-date design baseline.
 
-`xiuxian-game` is a design-stage independent game project for a room-based multiplayer xiuxian reincarnation sandbox. The player controls a cross-life true-spirit identity, not a sect, nation, or fixed character.
+Source handling for the inbox calibration work:
 
-```text
-MVP target: local single-player testing, privately deployable server,
-3-player room co-op / indirect competition, save / pause / resume,
-M0 -> M3 vertical gameplay loop.
-```
+- Canonical docs listed by `docs/index.md` have higher trust as extracted active design documents, but they may have lost details during extraction. Treat missing details, ambiguity, or uncertainty as expected calibration work, not as proof that the detail is invalid.
+- Fill missing or ambiguous details from user-provided clarification and from `docs/inbox` when the source material does not create an unresolved conflict.
+- `docs/inbox/xiuxian_design_reorganized_md` contains the documents previously targeted for calibration. Their information has value and should be treated as similar in trust level to other inbox files, while still checking for duplicated, stale, or conflicting statements.
+- Pay special attention to `docs/inbox/修仙游戏设计方案总目录/[已过时]修仙游戏0424` and the four root-level inbox setting documents:
+  - `docs/inbox/功法系统_收敛设定汇总_v0.4.md`
+  - `docs/inbox/自适应流速可暂停日历制 v2：阶段性时间规则.md`
+  - `docs/inbox/指令预输入机制 v1：阶段性规则文档.md`
+  - `docs/inbox/修为修炼公式_资源输入与丹药药性处理补充_v0.2.md`
+- These priority inbox sources were heavily edited with user involvement and should be treated as relatively high-trust detail sources, while still checking for outdated content.
+- Across all files, any source conflict, conflicting duplicate statement, unresolved stale-vs-active distinction, or design choice that cannot be mechanically derived must be returned to the user for judgment and decision.
 
 ## Source Precedence
 
@@ -50,63 +55,10 @@ If a canonical document exists for a topic, update it instead of creating a para
 - Prefer one canonical document per topic in the formal docs.
 - Preserve Chinese project terminology in design docs unless a file clearly uses English.
 - Keep design changes traceable in the edited canonical document; explicitly mark new decisions when they are not simple restatements of existing canonical policy.
-- Every change to canonical docs must be recorded in `docs/CHANGELOG.md` in the same work session, including design口径修订 that do not add, delete, rename, split, or merge documents.
+- Every change to canonical docs must be recorded in `docs/CHANGELOG.md` in the same work session, including design that do not add, delete, rename, split, or merge documents.
 - Record implementation implications as notes, acceptance constraints, risks, open questions, or technical decision gates unless implementation is explicitly requested.
 - Do not reintroduce deprecated terms as active concepts.
 - Record only stable UI decisions in formal docs; node-level layout and component placement belong to the current UI artifact / Figma.
-
-## Current Design Contract
-
-Active implementation-facing terms and rules:
-
-```text
-shared continuous world calendar
-world_day / world_hour
-hour_tick
-F1 / N1 / B1 / P0
-C1
-Command / CommandQueue
-TimelineReplay
-FormalEncounterState
-SectContinuousActionState
-ActionResourceInputBinding
-ActiveResourceEffect
-RealmSegmentBalance
-normalized_segment_progress
-WorldProductionBudgetState
-WorldItemBudgetTier
-WorldResourceBudget
-ResourcePool
-BudgetValue
-WorldStageBudgetState
-RealmBudgetPool
-CultivationTickResult
-```
-
-Key commitments:
-
-- Server settlement uses 1-hour `hour_tick` through the authoritative settlement path.
-- Players submit a small linear `CommandQueue`, not an hour-by-hour schedule.
-- Client submits intent; authoritative validation, mutation, logs, result packages, and replay data belong to server settlement.
-- S1 / room authoritative settlement is the integration bus; subsystems output result packages instead of bypassing it.
-- Sect gameplay is an organizational resource platform, not direct sect control by the player.
-- Multiplayer competition is mainly indirect through sects, nodes, resources, rumors, visibility, and opportunity windows.
-- Formal combat and breakthrough challenges use `FormalEncounterState` in B1; one B1 round equals 1 game hour.
-- World production budget is the underlying resource / item / opportunity generation ledger; stage budget is only the realm-based scheduling layer and must not replace resource flow, budget value, asset containers, or audit logs.
-
-Deprecated active concepts:
-
-```text
-turn_id
-quarter
-action_slot
-current_quarter
-TurnReplay
-QuarterReplay
-SectDecisionIntent
-sect main-action input
-six lunar action slots
-```
 
 ## External Resources
 

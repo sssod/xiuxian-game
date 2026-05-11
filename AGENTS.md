@@ -49,6 +49,8 @@ Do not treat `docs/index.md`, formal docs under other `docs` directories, or non
 - For new documents or structural revisions inside the package, follow `docs/inbox/xiuxian_design_reorganized_md/00_INDEX/文档模板与包内引用规范.md` for template choice and package-internal reference format.
 - Preserve Chinese project terminology in design docs unless a file clearly uses English.
 - Keep the reorganized package self-contained: documents inside the package may reference each other, but should not depend on outside files for interpretation.
+- In leading chapters such as “设计定位”, “当前定位”, “当前结论”, and “当前状态”, emphasize current system responsibility, core design conclusions, player-facing purpose, and stable boundaries. Do not turn these chapters into historical convergence notes or lists of deprecated wording.
+- Historical convergence notes, old-field migration, deprecated terms, stale-vs-active explanations, and source-material cleanup should be placed in dedicated later sections such as “旧字段迁移”, “待裁决与待补”, or “维护记录”. A leading chapter may include a concise exclusion only when it is necessary to define the current boundary.
 - Mark unresolved conflicts, stale-vs-active ambiguity, and non-mechanical design choices for user judgment.
 - Record implementation implications as notes, acceptance constraints, risks, open questions, or technical decision gates unless implementation is explicitly requested.
 - Do not reintroduce deprecated terms as active concepts.

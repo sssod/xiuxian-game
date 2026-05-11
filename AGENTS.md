@@ -46,6 +46,7 @@ Do not treat `docs/index.md`, formal docs under other `docs` directories, or non
 ## Documentation Rules
 
 - Prefer one clear document per topic inside `docs/inbox/xiuxian_design_reorganized_md`.
+- For new documents or structural revisions inside the package, follow `docs/inbox/xiuxian_design_reorganized_md/00_INDEX/文档模板与包内引用规范.md` for template choice and package-internal reference format.
 - Preserve Chinese project terminology in design docs unless a file clearly uses English.
 - Keep the reorganized package self-contained: documents inside the package may reference each other, but should not depend on outside files for interpretation.
 - Mark unresolved conflicts, stale-vs-active ambiguity, and non-mechanical design choices for user judgment.

@@ -22,6 +22,7 @@ var replay_log = ReplayLogScript.new()
 var result_history: Array[Dictionary] = []
 var rng_cursor = 0
 var next_result_sequence = 1
+var last_recovery_status: Dictionary = {}
 
 
 static func create_single_local(room_name_value: String, seed_value: int):
@@ -68,6 +69,7 @@ func to_dict() -> Dictionary:
 		"result_history": result_history.duplicate(true),
 		"rng_cursor": rng_cursor,
 		"next_result_sequence": next_result_sequence,
+		"last_recovery_status": last_recovery_status.duplicate(true),
 	}
 
 
@@ -105,5 +107,9 @@ static func from_dict(data: Dictionary):
 		for item in history:
 			if typeof(item) == TYPE_DICTIONARY:
 				room.result_history.append(item.duplicate(true))
+
+	var recovery = data.get("last_recovery_status", {})
+	if typeof(recovery) == TYPE_DICTIONARY:
+		room.last_recovery_status = recovery.duplicate(true)
 
 	return room

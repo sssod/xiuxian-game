@@ -8,6 +8,7 @@
   },
   "smoke": {
     "room_name": "Local Smoke Room",
-    "advance_hours": 1
+    "advance_hours": 1,
+    "post_load_f1_hours": 3
   }
 }

@@ -7,6 +7,8 @@ const ResultPackageScript = preload("res://src/runtime/result_package.gd")
 
 
 func advance_one_hour(room, data_registry):
+	room.active_state = RuntimeConstantsScript.ROOM_SETTLEMENT_IN_PROGRESS_STATE
+
 	var before_time = room.world_time.to_dict()
 	room.world_time.advance_hours(1)
 
@@ -60,5 +62,30 @@ func advance_one_hour(room, data_registry):
 			}
 		}
 	)
+	room.active_state = RuntimeConstantsScript.ROOM_ACTIVE_STATE
 	room.result_history.append(result.to_dict())
 	return result
+
+
+func advance_hours(room, data_registry, hours: int, speed_state: String = "") -> Array:
+	var safe_hours = hours
+	if safe_hours < 0:
+		safe_hours = 0
+
+	if not speed_state.is_empty() and room.speed_state != speed_state:
+		var previous_speed = room.speed_state
+		room.speed_state = speed_state
+		room.replay_log.append_event(
+			"speed_state_changed",
+			room.world_time.to_dict(),
+			{
+				"before": previous_speed,
+				"after": room.speed_state,
+				"reason": "advance_hours",
+			}
+		)
+
+	var results: Array = []
+	for _i in range(safe_hours):
+		results.append(advance_one_hour(room, data_registry))
+	return results

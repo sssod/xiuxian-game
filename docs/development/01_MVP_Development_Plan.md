@@ -42,6 +42,13 @@ P1 foundation decisions recorded on 2026-05-12:
 5. Save format: versioned JSON local save files for the P2 implementation path, with `save_version` checks and explicit migration handling before incompatible saves are loaded.
 6. Localization: defer key table implementation until UI text starts stabilizing; MVP must still reach Simplified Chinese and English coverage by P7.
 
+P2 initial implementation decisions recorded on 2026-05-12:
+
+1. MVP-1 load path only accepts `single_local` rooms with `single_only` save lineage.
+2. Unsupported `save_version`, room mode, save lineage, or active room state returns a diagnostic load failure instead of mutating or downgrading the save.
+3. If a saved room is found in `settlement_in_progress`, the P2 runtime shell records a recovery event and restores the last committed `world_running` snapshot; richer pending-settlement replay is deferred until systems create multi-step settlements.
+4. F1 advancement in the smoke path uses repeated hour-tick settlement and result-package creation, not a direct time jump.
+
 ## Target Outcome
 
 MVP-1 is complete when a local player can:
@@ -61,9 +68,9 @@ The schedule starts on 2026-05-12 and assumes focused part-time-to-full-time dev
 
 | Milestone | Calendar Window | Duration | Target Status |
 | --- | --- | ---: | --- |
-| P0 Planning Reset | 2026-05-12 to 2026-05-15 | 4 days | In progress |
-| P1 Godot Foundation | 2026-05-16 to 2026-05-29 | 2 weeks | Not started |
-| P2 Single-Player Room, Time, Save | 2026-05-30 to 2026-06-12 | 2 weeks | Not started |
+| P0 Planning Reset | 2026-05-12 to 2026-05-15 | 4 days | Completed |
+| P1 Godot Foundation | 2026-05-16 to 2026-05-29 | 2 weeks | Completed |
+| P2 Single-Player Room, Time, Save | 2026-05-30 to 2026-06-12 | 2 weeks | In progress |
 | P3 Character, Realm, Command, Cultivation | 2026-06-13 to 2026-07-03 | 3 weeks | Not started |
 | P4 Map, Movement, Resources, Inventory | 2026-07-04 to 2026-07-17 | 2 weeks | Not started |
 | P5 Events, Combat, Breakthrough, Reincarnation | 2026-07-18 to 2026-08-07 | 3 weeks | Not started |
@@ -77,15 +84,15 @@ Progress is tracked by runnable output, not by document completion.
 
 | Track | Status | Progress | Done | Next Action | Blocking Issues |
 | --- | --- | ---: | --- | --- | --- |
-| Planning reset | In progress | 80% | MVP plan moved outside design package; first phase narrowed to single-player; P1 technical defaults recorded | Review first foundation slice after local Godot verification | None |
-| Godot project foundation | In progress | 55% | Godot project skeleton, debug boot scene, JSON config, and headless smoke command added; smoke and headless main-scene launch verified with Godot 4.6.2 | Launch project in the editor and verify debug boot scene visually | None |
-| Runtime architecture | In progress | 40% | Runtime skeletons for room, world time, command queue, character state, settlement, result package, replay, data, save, logging, and UI adapter added; one-hour smoke result verified | Expand smoke runner into save/load recovery runner for P2 | None |
-| Single-player room/save | Not started | 0% | Design references identified | Implement local room creation, save, load, recovery | Needs runtime skeleton |
+| Planning reset | Completed | 100% | MVP plan moved outside design package; first phase narrowed to single-player; P1 technical defaults recorded | Keep plan current as implementation advances | None |
+| Godot project foundation | Completed | 100% | Godot project skeleton, debug boot scene, JSON config, runtime shell, and headless smoke command added; smoke and headless main-scene launch verified with Godot 4.6.2 | Reopen only if editor-specific settings or export setup become necessary | None |
+| Runtime architecture | In progress | 55% | Runtime skeletons for room, world time, command queue, character state, settlement, result package, replay, data, save, logging, and UI adapter added; save/load recovery runner added | Add scenario-focused settlement APIs as P3/P4 systems arrive | None |
+| Single-player room/save | In progress | 35% | Local room creation, N1 hour advance, versioned save/load, load diagnostics, interrupted-settlement recovery marker, F1 repeated-tick smoke path, and debug UI save/continue controls added | Add broader load failure diagnostics and first save/load UI review pass | None |
 | Character/realm/cultivation | Not started | 0% | Design references identified | Implement true-spirit/current-life initialization and CP progression | Needs room/save skeleton |
 | Map/movement/resources | Not started | 0% | Design references identified | Implement node graph, travel command, and minimal resource slot | Needs command settlement |
 | Events/combat/breakthrough | Not started | 0% | Design references identified | Implement deterministic event trigger and one B1 combat path | Needs character bars and command settlement |
 | UI integration | Not started | 0% | Low-fidelity UI direction accepted | Build title/debug/main/cultivation/command views | Needs runtime state APIs |
-| Validation/replay | Not started | 0% | Replay/debug requirement accepted | Add fixed-seed test scenarios | Needs core loop |
+| Validation/replay | In progress | 15% | Empty-room smoke plus save/load/F1 repeated-tick smoke now exercise result packages and replay entries | Add fixed-seed gameplay scenarios as P3/P5 systems arrive | Needs gameplay systems |
 | Multiplayer | Deferred | 0% | Explicitly moved out of MVP-1 | Revisit after single-player MVP review | Out of current scope |
 
 ## Milestone Details
@@ -385,3 +392,4 @@ These items are intentionally outside MVP-1:
 | 2026-05-12 | Created the MVP development plan outside the formal design package. |
 | 2026-05-12 | Revised the plan to be English-first, execution-oriented, schedule-based, progress-tracked, and single-player-only for MVP-1. |
 | 2026-05-12 | Recorded P1 technical decisions and started Godot foundation implementation with a debug boot scene and headless smoke runner. |
+| 2026-05-12 | Marked P1 complete per local verification, started P2, and added the first save/load/recovery/F1 repeated-tick implementation slice. |

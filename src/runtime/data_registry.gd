@@ -53,3 +53,13 @@ func get_smoke_room_name() -> String:
 	if typeof(smoke) != TYPE_DICTIONARY:
 		return "Local Smoke Room"
 	return str(smoke.get("room_name", "Local Smoke Room"))
+
+
+func get_smoke_post_load_f1_hours() -> int:
+	var smoke = config.get("smoke", {})
+	if typeof(smoke) != TYPE_DICTIONARY:
+		return 3
+	var hours = int(smoke.get("post_load_f1_hours", 3))
+	if hours < 1:
+		return 1
+	return hours

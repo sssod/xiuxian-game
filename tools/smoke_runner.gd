@@ -13,7 +13,13 @@ func _init() -> void:
 	})
 
 	var runtime = XiuxianRuntimeScript.new()
-	var output = runtime.run_empty_room_smoke()
+	var empty_room_output = runtime.run_empty_room_smoke()
+	var save_load_output = runtime.run_save_load_recovery_smoke()
+	var output = {
+		"ok": bool(empty_room_output.get("ok", false)) and bool(save_load_output.get("ok", false)),
+		"empty_room": empty_room_output,
+		"save_load_recovery": save_load_output,
+	}
 	var ok = bool(output.get("ok", false))
 
 	if ok:

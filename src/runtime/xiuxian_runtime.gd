@@ -55,6 +55,45 @@ func advance_hours(room, hours: int, speed_state: String = "") -> Array:
 	return settlement_engine.advance_hours(room, data_registry, hours, speed_state)
 
 
+func enqueue_command(room, action_type: String, planned_duration_hours: int, resource_inputs: Array = []) -> Dictionary:
+	var command = room.command_queue.create_player_command(
+		action_type,
+		planned_duration_hours,
+		room.world_time.to_dict(),
+		room.character_state.character_id,
+		resource_inputs
+	)
+	var validation = settlement_engine.validate_command(room, data_registry, command, "enqueue")
+	command["last_validation"] = validation.duplicate(true)
+	command["f1_eligible"] = bool(validation.get("f1_eligible", false))
+	if not bool(validation.get("ok", false)):
+		return {
+			"ok": false,
+			"code": validation.get("code", "command_invalid"),
+			"error": validation.get("error", ""),
+			"command": command,
+			"validation": validation,
+		}
+
+	var queue_result = room.command_queue.add_command(command)
+	if bool(queue_result.get("ok", false)):
+		room.replay_log.append_event(
+			"command_enqueued",
+			room.world_time.to_dict(),
+			{
+				"command": command.duplicate(true),
+				"queue_result": queue_result.duplicate(true),
+			}
+		)
+	queue_result["command"] = command
+	queue_result["validation"] = validation
+	return queue_result
+
+
+func enqueue_active_breathing(room, planned_duration_hours: int = 4) -> Dictionary:
+	return enqueue_command(room, "active_breathing", planned_duration_hours)
+
+
 func save_room(room, path: String = SaveRepositoryScript.DEFAULT_SAVE_PATH) -> Dictionary:
 	return save_repository.save_room(room, path)
 
@@ -86,6 +125,7 @@ func run_empty_room_smoke() -> Dictionary:
 func run_save_load_recovery_smoke() -> Dictionary:
 	var config_status = load_config()
 	var room = create_single_player_room()
+	var initial_command = enqueue_active_breathing(room, data_registry.get_smoke_post_load_f1_hours())
 	var first_result = advance_one_hour(room)
 	var save_result = save_room(room)
 	if not bool(save_result.get("ok", false)):
@@ -200,6 +240,7 @@ func run_save_load_recovery_smoke() -> Dictionary:
 	)
 
 	var f1_hours = data_registry.get_smoke_post_load_f1_hours()
+	var post_load_command = enqueue_active_breathing(loaded_room, f1_hours)
 	var post_load_results = advance_hours(
 		loaded_room,
 		f1_hours,
@@ -218,6 +259,8 @@ func run_save_load_recovery_smoke() -> Dictionary:
 		and unsupported_lineage_diagnostic_ok
 		and unsupported_state_diagnostic_ok
 		and interrupted_recovery_ok
+		and bool(initial_command.get("ok", false))
+		and bool(post_load_command.get("ok", false))
 		and post_load_results.size() == f1_hours
 		and bool(second_save_result.get("ok", false))
 	)
@@ -235,6 +278,10 @@ func run_save_load_recovery_smoke() -> Dictionary:
 			"recovery": load_result.get("recovery", {}),
 		},
 		"second_save": second_save_result,
+		"commands": {
+			"initial_active_breathing": initial_command,
+			"post_load_active_breathing": post_load_command,
+		},
 		"diagnostics": {
 			"missing_load": {
 				"ok": missing_load_diagnostic_ok,
@@ -290,6 +337,56 @@ func run_save_load_recovery_smoke() -> Dictionary:
 			"replay_entries": loaded_room.replay_log.entries.size(),
 			"speed_state": loaded_room.speed_state,
 			"world_time": loaded_room.world_time.to_dict(),
+			"cultivation_points": loaded_room.character_state.cultivation_state.get("cultivation_points", 0.0),
+			"normalized_segment_progress": loaded_room.character_state.cultivation_state.get("normalized_segment_progress", 0.0),
+			"current_command": loaded_room.command_queue.current_command.duplicate(true),
 		},
 		"ui_state": ui_adapter.from_room(loaded_room, post_load_results.back()),
+	}
+
+
+func run_active_breathing_smoke() -> Dictionary:
+	var config_status = load_config()
+	var room = create_single_player_room()
+	var queue_result = enqueue_active_breathing(room, 31)
+	var before_cp = float(room.character_state.cultivation_state.get("cultivation_points", 0.0))
+	var results = advance_hours(room, 31, RuntimeConstantsScript.SPEED_F1)
+	var after_cp = float(room.character_state.cultivation_state.get("cultivation_points", 0.0))
+	var current_stage = str(room.character_state.cultivation_state.get("minor_stage", ""))
+	var active_command = room.command_queue.current_command
+	var fallback_running = bool(active_command.get("is_fallback", false))
+	var minor_advanced = current_stage == "qi_refining_2"
+	var cp_increased = after_cp > before_cp
+	var result_count_ok = results.size() == 31
+	var fallback_after_completion = fallback_running and room.speed_state == RuntimeConstantsScript.SPEED_N1
+	var result_has_cultivation_tick = false
+	if not results.is_empty():
+		var last_result = results.back()
+		result_has_cultivation_tick = last_result.deltas.get("command", {}).get("tick", {}).has("tick")
+	var ok = (
+		bool(config_status.get("ok", false))
+		and bool(queue_result.get("ok", false))
+		and cp_increased
+		and minor_advanced
+		and result_count_ok
+		and fallback_after_completion
+		and result_has_cultivation_tick
+	)
+
+	return {
+		"ok": ok,
+		"config": config_status,
+		"queue": queue_result,
+		"checks": {
+			"before_cp": before_cp,
+			"after_cp": after_cp,
+			"minor_stage": current_stage,
+			"result_count": results.size(),
+			"fallback_after_completion": fallback_after_completion,
+			"speed_state": room.speed_state,
+			"result_has_cultivation_tick": result_has_cultivation_tick,
+			"replay_entries": room.replay_log.entries.size(),
+			"result_packages": room.result_history.size(),
+		},
+		"ui_state": ui_adapter.from_room(room, results.back()),
 	}

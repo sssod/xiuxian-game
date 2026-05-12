@@ -70,3 +70,41 @@ func get_character_init_config() -> Dictionary:
 	if typeof(character_init) != TYPE_DICTIONARY:
 		return {}
 	return character_init.duplicate(true)
+
+
+func get_cultivation_balance_config() -> Dictionary:
+	var balance = config.get("cultivation_balance", {})
+	if typeof(balance) != TYPE_DICTIONARY:
+		return {}
+	return balance.duplicate(true)
+
+
+func get_action_profile(action_type: String) -> Dictionary:
+	var balance = config.get("cultivation_balance", {})
+	if typeof(balance) != TYPE_DICTIONARY:
+		return {}
+
+	var profiles = balance.get("action_profiles", {})
+	if typeof(profiles) != TYPE_DICTIONARY:
+		return {}
+
+	var profile = profiles.get(action_type, {})
+	if typeof(profile) != TYPE_DICTIONARY:
+		return {}
+	return profile.duplicate(true)
+
+
+func get_realm_segment(segment_id: String) -> Dictionary:
+	var balance = config.get("cultivation_balance", {})
+	if typeof(balance) != TYPE_DICTIONARY:
+		return {}
+
+	var segments = balance.get("realm_segments", [])
+	if typeof(segments) != TYPE_ARRAY:
+		return {}
+
+	for segment in segments:
+		if typeof(segment) == TYPE_DICTIONARY and str(segment.get("segment_id", "")) == segment_id:
+			return segment.duplicate(true)
+
+	return {}

@@ -15,12 +15,18 @@ func _init() -> void:
 	var runtime = XiuxianRuntimeScript.new()
 	var empty_room_output = runtime.run_empty_room_smoke()
 	var save_load_output = runtime.run_save_load_recovery_smoke()
+	var active_breathing_output = runtime.run_active_breathing_smoke()
+	var ok = (
+		bool(empty_room_output.get("ok", false))
+		and bool(save_load_output.get("ok", false))
+		and bool(active_breathing_output.get("ok", false))
+	)
 	var output = {
-		"ok": bool(empty_room_output.get("ok", false)) and bool(save_load_output.get("ok", false)),
+		"ok": ok,
 		"empty_room": empty_room_output,
 		"save_load_recovery": save_load_output,
+		"active_breathing": active_breathing_output,
 	}
-	var ok = bool(output.get("ok", false))
 
 	if ok:
 		logger.info("smoke.pass", output)

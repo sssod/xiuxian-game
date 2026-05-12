@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_label": "mvp-p3-character-init",
+  "build_label": "mvp-p3-active-breathing",
   "default_world_seed": 424242,
   "time": {
     "hours_per_day": 24,
@@ -60,5 +60,160 @@
       "foundation_quality": 0.5,
       "meridian_pressure": 0.0
     }
+  },
+  "cultivation_balance": {
+    "action_profiles": {
+      "active_breathing": {
+        "action_type": "active_breathing",
+        "display_name": "Active Breathing",
+        "source": "explicit_player",
+        "base_efficiency_ratio": 1.0,
+        "compatible_hour_policy": "full",
+        "f1_eligible": true,
+        "can_trigger_minor_stage_advance": true,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 72,
+        "resource_slot_count": 0,
+        "pressure_from_overbenchmark_rate": 0.01
+      },
+      "seclusion_cultivation": {
+        "action_type": "seclusion_cultivation",
+        "display_name": "Seclusion Cultivation",
+        "source": "explicit_player",
+        "base_efficiency_ratio": 0.9,
+        "compatible_hour_policy": "full",
+        "f1_eligible": true,
+        "can_trigger_minor_stage_advance": true,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 24,
+        "max_duration_hours": 720,
+        "resource_slot_count": 0,
+        "pressure_from_overbenchmark_rate": 0.008
+      },
+      "auto_circulation": {
+        "action_type": "auto_circulation",
+        "display_name": "Auto Circulation",
+        "source": "system_fallback",
+        "base_efficiency_ratio": 0.12,
+        "compatible_hour_policy": "full",
+        "f1_eligible": false,
+        "can_trigger_minor_stage_advance": true,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 0,
+        "resource_slot_count": 0,
+        "pressure_from_overbenchmark_rate": 0.0
+      },
+      "consolidation": {
+        "action_type": "consolidation",
+        "display_name": "Foundation Consolidation",
+        "source": "explicit_player",
+        "base_efficiency_ratio": 0.0,
+        "compatible_hour_policy": "none",
+        "f1_eligible": true,
+        "can_trigger_minor_stage_advance": false,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 72,
+        "resource_slot_count": 0,
+        "pressure_recovery_per_hour": 0.01
+      },
+      "managed_action": {
+        "action_type": "managed_action",
+        "display_name": "Managed Action",
+        "source": "explicit_player",
+        "base_efficiency_ratio": 0.3,
+        "compatible_hour_policy": "full",
+        "f1_eligible": true,
+        "can_trigger_minor_stage_advance": true,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 168,
+        "resource_slot_count": 0,
+        "pressure_from_overbenchmark_rate": 0.0
+      },
+      "fallback_meditate": {
+        "action_type": "fallback_meditate",
+        "display_name": "Fallback Meditation",
+        "source": "system_fallback",
+        "base_efficiency_ratio": 0.08,
+        "compatible_hour_policy": "full",
+        "f1_eligible": false,
+        "can_trigger_minor_stage_advance": true,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 0,
+        "resource_slot_count": 0,
+        "pressure_from_overbenchmark_rate": 0.0
+      },
+      "rest": {
+        "action_type": "rest",
+        "display_name": "Rest",
+        "source": "system_fallback",
+        "base_efficiency_ratio": 0.0,
+        "compatible_hour_policy": "none",
+        "f1_eligible": false,
+        "can_trigger_minor_stage_advance": false,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 0,
+        "resource_slot_count": 0,
+        "pressure_recovery_per_hour": 0.02
+      }
+    },
+    "realm_segments": [
+      {
+        "segment_id": "qi_refining_1",
+        "realm_from": "qi_refining",
+        "minor_stage_from": "qi_refining_1",
+        "realm_to": "qi_refining",
+        "minor_stage_to": "qi_refining_2",
+        "next_segment_id": "qi_refining_2",
+        "segment_type": "minor_progress",
+        "target_elapsed_hours_standard": 30,
+        "expected_cultivation_hour_ratio": 1.0,
+        "required_normalized_progress": 1.0,
+        "cp_lower_bound": 0,
+        "cp_upper_bound": 30,
+        "raw_cultivation_required": 30,
+        "min_efficiency_ratio": 0.05,
+        "max_efficiency_ratio": 2.0
+      },
+      {
+        "segment_id": "qi_refining_2",
+        "realm_from": "qi_refining",
+        "minor_stage_from": "qi_refining_2",
+        "realm_to": "qi_refining",
+        "minor_stage_to": "qi_refining_3",
+        "next_segment_id": "qi_refining_3",
+        "segment_type": "minor_progress",
+        "target_elapsed_hours_standard": 40,
+        "expected_cultivation_hour_ratio": 1.0,
+        "required_normalized_progress": 1.0,
+        "cp_lower_bound": 30,
+        "cp_upper_bound": 70,
+        "raw_cultivation_required": 40,
+        "min_efficiency_ratio": 0.05,
+        "max_efficiency_ratio": 2.0
+      },
+      {
+        "segment_id": "qi_refining_3",
+        "realm_from": "qi_refining",
+        "minor_stage_from": "qi_refining_3",
+        "realm_to": "qi_refining",
+        "minor_stage_to": "qi_refining_4",
+        "next_segment_id": "",
+        "segment_type": "minor_progress",
+        "target_elapsed_hours_standard": 50,
+        "expected_cultivation_hour_ratio": 1.0,
+        "required_normalized_progress": 1.0,
+        "cp_lower_bound": 70,
+        "cp_upper_bound": 120,
+        "raw_cultivation_required": 50,
+        "min_efficiency_ratio": 0.05,
+        "max_efficiency_ratio": 2.0
+      }
+    ]
   }
 }

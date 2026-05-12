@@ -76,6 +76,12 @@ func _build_ui() -> void:
 	buttons["advance"] = advance_button
 	button_row.add_child(advance_button)
 
+	var active_breathing_button = Button.new()
+	active_breathing_button.text = "Queue Active Breathing"
+	active_breathing_button.pressed.connect(_on_active_breathing_pressed)
+	buttons["active_breathing"] = active_breathing_button
+	button_row.add_child(active_breathing_button)
+
 	var f1_button = Button.new()
 	f1_button.text = "Advance F1 Smoke"
 	f1_button.pressed.connect(_on_advance_f1_pressed)
@@ -114,9 +120,18 @@ func _on_advance_pressed() -> void:
 	_refresh()
 
 
+func _on_active_breathing_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_active_breathing(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
 func _on_advance_f1_pressed() -> void:
 	if room == null:
 		room = runtime.create_single_player_room()
+	if room.command_queue.is_empty() or room.command_queue.is_current_fallback():
+		save_status = runtime.enqueue_active_breathing(room, runtime.data_registry.get_smoke_post_load_f1_hours())
 	var results = runtime.advance_hours(
 		room,
 		runtime.data_registry.get_smoke_post_load_f1_hours(),
@@ -172,22 +187,31 @@ func _refresh() -> void:
 		ui_state.get("world_time_label", ""),
 		ui_state.get("speed_state", ""),
 	]
-	labels["queue"].text = "Command queue empty: %s | Max queued future commands: %d" % [
-		str(ui_state.get("queue_empty", true)),
+	labels["queue"].text = "Command: %s | queued future: %d/%d | fallback=%s | empty=%s" % [
+		ui_state.get("current_command_summary", "none"),
+		ui_state.get("future_command_count", 0),
 		CommandQueueScript.MAX_FUTURE_COMMANDS,
+		str(ui_state.get("current_command_is_fallback", false)),
+		str(ui_state.get("queue_empty", true)),
 	]
 	labels["slot"].text = _format_save_slot_status()
 
 	var save_text = "Save/load: no action yet"
 	if bool(save_status.get("ok", false)):
-		save_text = "Save: ok %s at Day %d Hour %02d | saved_at_unix=%d" % [
-			save_status.get("path", ""),
-			save_status.get("world_time", {}).get("world_day", 1),
-			save_status.get("world_time", {}).get("world_hour", 0),
-			save_status.get("saved_at_unix", 0),
-		]
+		if save_status.has("command"):
+			save_text = "Command enqueue: ok %s (%s)" % [
+				save_status.get("command", {}).get("command_id", ""),
+				save_status.get("code", ""),
+			]
+		else:
+			save_text = "Save: ok %s at Day %d Hour %02d | saved_at_unix=%d" % [
+				save_status.get("path", ""),
+				save_status.get("world_time", {}).get("world_day", 1),
+				save_status.get("world_time", {}).get("world_hour", 0),
+				save_status.get("saved_at_unix", 0),
+			]
 	elif save_status.has("error"):
-		save_text = "Save: failed (%s) - %s" % [
+		save_text = "Action failed (%s) - %s" % [
 			save_status.get("code", "unknown"),
 			save_status.get("error", ""),
 		]

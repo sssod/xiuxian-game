@@ -1,33 +1,46 @@
 # Scripts
 
-## Export Canonical Docs
+## ChatGPT Library Design Docs Sync
 
-导出 `docs/index.md` 中“当前 canonical 文档”表列出的正式文档，用于导入 Notion、ChatGPT Library 或其他知识库。
-`docs/index.md` 中“已归档参考”的文档不会导出。
+`scripts/sync_design_docs_chatgpt.py` 用于在本地正式设计文档包和 ChatGPT Web Library 之间做扁平化往返同步。
+
+来源目录：
+
+```text
+docs/xiuxian_design_docs/
+```
 
 默认导出：
 
 ```bash
-python3 scripts/export_canonical_docs.py
+python3 scripts/sync_design_docs_chatgpt.py export --clean
 ```
 
 输出目录：
 
 ```text
-outputs/canonical-docs-export/
+outputs/xiuxian-design-docs-chatgpt/
 ```
 
 输出内容：
 
-- 编号后的独立 Markdown 文档。
-- `README.md`：简单导入索引。
-- `manifest.json`：脚本化校验用清单，包含原始路径和 SHA-256。
+- 编号后的扁平 Markdown 文档，文件名保留原包内路径信息。
+- `README.md`：上传和回合并说明。
+- `INDEX_ChatGPT扁平索引.md`：Web Library 侧入口索引。
+- `manifest.json`：本地回合并校验清单，包含原始路径和 SHA-256。
 
-常用参数：
+从 Web 下载修改后的 Markdown 后，先预览：
 
 ```bash
-python3 scripts/export_canonical_docs.py --output outputs/notion-import --clean
-python3 scripts/export_canonical_docs.py --output outputs/chatgpt-library --clean
+python3 scripts/sync_design_docs_chatgpt.py plan-import --input <下载目录>
 ```
 
-`--clean` 只会清理空目录或此前由该脚本生成过的目录。
+确认后写回本地正式包：
+
+```bash
+python3 scripts/sync_design_docs_chatgpt.py import --input <下载目录>
+```
+
+导入默认会阻止覆盖“导出后本地也发生过变化”的源文件；确需覆盖时再显式加 `--allow-source-drift`。
+
+`scripts/export_canonical_docs.py` 仅保留为兼容入口，当前会转发到上述同步脚本。

@@ -52,17 +52,12 @@ Do not treat old `docs/index.md`, old `docs/CHANGELOG.md`, formerly canonical do
 
 ## Documentation Rules
 
-- Prefer one clear document per topic inside `docs/xiuxian_design_docs`.
-- For new documents or structural revisions inside the package, follow `docs/xiuxian_design_docs/00_INDEX/文档模板与包内引用规范.md` for template choice and package-internal reference format.
-- Preserve Chinese project terminology in design docs unless a file clearly uses English.
-- Keep the formal package self-contained: documents inside the package may reference each other, but should not depend on outside files for interpretation.
-- In leading chapters such as “设计定位”, “当前定位”, “当前结论”, and “当前状态”, emphasize current system responsibility, core design conclusions, player-facing purpose, and stable boundaries. Do not turn these chapters into historical convergence notes or lists of deprecated wording.
-- Keep leading conclusion chapters concise. They should summarize the stable core in a small number of high-level points, not recreate the later document structure or repeat details that belong in rules, fields, formulas, UI, MVP, acceptance, migration, or maintenance sections.
-- Historical convergence notes, old-field migration, deprecated terms, stale-vs-active explanations, and source-material cleanup should be placed in dedicated later sections such as “旧字段迁移”, “待裁决与待补”, or “维护记录”. A leading chapter may include a concise exclusion only when it is necessary to define the current boundary.
-- Mark unresolved conflicts, stale-vs-active ambiguity, and non-mechanical design choices for user judgment.
-- Record implementation implications as notes, acceptance constraints, risks, open questions, or technical decision gates when they are not immediately handled in the current MVP implementation task.
-- Do not reintroduce deprecated terms as active concepts.
-- Do not update historical canonical docs or the archived changelog under `docs/inbox/historical_reference_docs` unless the user explicitly asks to maintain historical references.
+- Codex-side work should default to MVP implementation. Update docs only when the change clarifies MVP behavior, records an accepted decision, or surfaces an implementation-blocking gap.
+- For package structure, templates, terminology, package-internal references, leading-section style, stale-content handling, and historical-material handling, follow `docs/xiuxian_design_docs/00_INDEX/文档模板与包内引用规范.md`.
+- For ChatGPT Web Library upload/download round-trips, follow `docs/xiuxian_design_docs/00_INDEX/ChatGPT_Library同步与扁平导入导出规范.md`.
+- Keep `docs/xiuxian_design_docs` self-contained. Package-external materials are references only; adopted details must be restated in the formal package or directly authorized by the user.
+- Mark unresolved conflicts, stale-vs-active ambiguity, and non-mechanical design choices for user judgment instead of deciding silently.
+- Do not update historical reference documents in `docs/inbox` unless the user explicitly asks for archive maintenance.
 - Record only stable UI decisions in the formal package; node-level layout and component placement belong to the current UI artifact / Figma.
 
 ## External Resources

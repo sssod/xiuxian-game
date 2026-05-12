@@ -4,7 +4,9 @@
 
 ## Summary
 
-Design-stage independent game project for a room-based multiplayer xiuxian reincarnation sandbox. The bootstrap phase is dedicated to product concept, game-design, systems-design, narrative/worldbuilding, and UI/UX design documentation. It intentionally does not select a game engine, network stack, backend architecture, or production deployment model yet.
+Independent game project for a room-based multiplayer xiuxian reincarnation sandbox.
+
+Current work mode is MVP development against the formal design document package at `docs/xiuxian_design_docs`. Codex-side work should prioritize implementing, validating, and tightening MVP slices; design-document edits remain in scope when they clarify behavior, record accepted decisions, or surface implementation-blocking gaps.
 
 ## Bootstrap Snapshot
 
@@ -17,9 +19,25 @@ Design-stage independent game project for a room-based multiplayer xiuxian reinc
 ## Quick Start
 
 ```bash
-ls docs
+ls docs/xiuxian_design_docs
 ```
 
-## Bootstrap Source Of Truth
+## Design Docs
 
-See `orchestration/project-index/xiuxian-game/bootstrap-spec.yaml`.
+Formal package:
+
+```text
+docs/xiuxian_design_docs/
+```
+
+ChatGPT Library flat export:
+
+```bash
+python3 scripts/sync_design_docs_chatgpt.py export --clean
+```
+
+Preview Web-edited docs before writing them back:
+
+```bash
+python3 scripts/sync_design_docs_chatgpt.py plan-import --input <下载目录>
+```

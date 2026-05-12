@@ -12,9 +12,19 @@
 4. 遇到来源冲突、重复口径、陈旧内容或无法机械判断的设计取舍，返回用户裁决。
 5. MVP 开发应以本包为设计合同；历史资料只能作为恢复线索，不能直接越过本包驱动实现。
 
+## ChatGPT Library 同步
+
+由于 ChatGPT Web Library 以扁平文件方式索引文档，本包通过脚本生成专用上传版本：
+
+```bash
+python3 scripts/sync_design_docs_chatgpt.py export --clean
+```
+
+默认输出目录为 `outputs/xiuxian-design-docs-chatgpt/`。Web 端修改后下载回本地，先用 `plan-import` 查看写回计划，再用 `import` 合并入本包。完整流程见 `00_INDEX/ChatGPT_Library同步与扁平导入导出规范.md`。
+
 ## 目录结构
 
-- `00_INDEX/`：当前总索引、文档模板与包内引用规范。
+- `00_INDEX/`：当前总索引、文档模板、包内引用规范和 ChatGPT Library 同步规范。
 - `02_系统设计/`：按框架重排的系统与玩法文档。
 - `03_数值设计/`：数值模型、公式、投放与验算文档。
 - `04_交互设计/`：页面与交互约束文档；节点级布局以当前 UI artifact / Figma 为准。

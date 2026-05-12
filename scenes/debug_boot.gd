@@ -42,7 +42,7 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 28)
 	layout.add_child(title)
 
-	for key in ["build", "config", "seed", "room", "character", "time", "queue", "slot", "save", "result", "replay"]:
+	for key in ["build", "config", "seed", "room", "character", "method", "time", "queue", "slot", "save", "result", "replay"]:
 		var label = Label.new()
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		labels[key] = label
@@ -81,6 +81,36 @@ func _build_ui() -> void:
 	active_breathing_button.pressed.connect(_on_active_breathing_pressed)
 	buttons["active_breathing"] = active_breathing_button
 	button_row.add_child(active_breathing_button)
+
+	var seclusion_button = Button.new()
+	seclusion_button.text = "Queue Seclusion"
+	seclusion_button.pressed.connect(_on_seclusion_pressed)
+	buttons["seclusion"] = seclusion_button
+	button_row.add_child(seclusion_button)
+
+	var method_button = Button.new()
+	method_button.text = "Queue Method Study"
+	method_button.pressed.connect(_on_method_study_pressed)
+	buttons["method_study"] = method_button
+	button_row.add_child(method_button)
+
+	var consolidation_button = Button.new()
+	consolidation_button.text = "Queue Consolidation"
+	consolidation_button.pressed.connect(_on_consolidation_pressed)
+	buttons["consolidation"] = consolidation_button
+	button_row.add_child(consolidation_button)
+
+	var managed_button = Button.new()
+	managed_button.text = "Queue Managed"
+	managed_button.pressed.connect(_on_managed_pressed)
+	buttons["managed"] = managed_button
+	button_row.add_child(managed_button)
+
+	var rest_button = Button.new()
+	rest_button.text = "Queue Rest"
+	rest_button.pressed.connect(_on_rest_pressed)
+	buttons["rest"] = rest_button
+	button_row.add_child(rest_button)
 
 	var f1_button = Button.new()
 	f1_button.text = "Advance F1 Smoke"
@@ -127,6 +157,41 @@ func _on_active_breathing_pressed() -> void:
 	_refresh()
 
 
+func _on_seclusion_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_seclusion_cultivation(room, runtime.data_registry.get_action_min_duration("seclusion_cultivation", 24))
+	_refresh()
+
+
+func _on_method_study_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_method_study(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
+func _on_consolidation_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_consolidation(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
+func _on_managed_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_managed_action(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
+func _on_rest_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_recovery(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
 func _on_advance_f1_pressed() -> void:
 	if room == null:
 		room = runtime.create_single_player_room()
@@ -166,6 +231,7 @@ func _refresh() -> void:
 		labels["seed"].text = "Seed: unavailable"
 		labels["room"].text = "Room: no active room"
 		labels["character"].text = "Character: unavailable"
+		labels["method"].text = "Method: unavailable"
 		labels["time"].text = "Time: unavailable"
 		labels["queue"].text = "Queue: unavailable"
 		labels["slot"].text = _format_save_slot_status()
@@ -183,15 +249,17 @@ func _refresh() -> void:
 		ui_state.get("active_state", ""),
 	]
 	labels["character"].text = "Character: %s" % ui_state.get("character_summary", "")
+	labels["method"].text = "Method: %s" % ui_state.get("method_summary", "")
 	labels["time"].text = "World time: %s | Speed: %s" % [
 		ui_state.get("world_time_label", ""),
 		ui_state.get("speed_state", ""),
 	]
-	labels["queue"].text = "Command: %s | queued future: %d/%d | fallback=%s | empty=%s" % [
+	labels["queue"].text = "Command: %s | queued future: %d/%d | fallback=%s | managed=%s | empty=%s" % [
 		ui_state.get("current_command_summary", "none"),
 		ui_state.get("future_command_count", 0),
 		CommandQueueScript.MAX_FUTURE_COMMANDS,
 		str(ui_state.get("current_command_is_fallback", false)),
+		str(not ui_state.get("managed_action_state", {}).is_empty()),
 		str(ui_state.get("queue_empty", true)),
 	]
 	labels["slot"].text = _format_save_slot_status()

@@ -2,6 +2,11 @@ extends RefCounted
 class_name CommandQueue
 
 const MAX_FUTURE_COMMANDS = 3
+const ACTION_ACTIVE_BREATHING = "active_breathing"
+const ACTION_SECLUSION_CULTIVATION = "seclusion_cultivation"
+const ACTION_METHOD_STUDY = "method_study"
+const ACTION_CONSOLIDATION = "consolidation"
+const ACTION_MANAGED_ACTION = "managed_action"
 const ACTION_FALLBACK_MEDITATE = "fallback_meditate"
 const ACTION_REST = "rest"
 const COMMAND_STATE_PENDING = "pending"
@@ -33,13 +38,17 @@ func create_player_command(
 		planned_duration_hours: int,
 		world_time: Dictionary,
 		character_id: String,
-		resource_inputs_value: Array = []
+		resource_inputs_value: Array = [],
+		options: Dictionary = {}
 ) -> Dictionary:
 	var command = _base_command(action_type, world_time, character_id)
 	command["command_id"] = _next_command_id()
 	command["source"] = "explicit_player"
 	command["planned_duration_hours"] = planned_duration_hours
 	command["resource_inputs"] = resource_inputs_value.duplicate(true)
+	command["command_options"] = options.duplicate(true)
+	for key in options.keys():
+		command[key] = options.get(key)
 	return command
 
 

@@ -104,8 +104,10 @@ func advance_one_hour(room, data_registry):
 				"completion": command_completion,
 				"current_command": room.command_queue.current_command.duplicate(true),
 				"queued_commands": room.command_queue.queued_commands.duplicate(true),
+				"managed_action_state": room.command_queue.managed_action_state.duplicate(true),
 			},
 			"character": room.character_state.cultivation_state.duplicate(true),
+			"method_states": room.character_state.method_states.duplicate(true),
 		}
 	)
 	room.active_state = RuntimeConstantsScript.ROOM_ACTIVE_STATE
@@ -151,12 +153,14 @@ func validate_command(room, data_registry, command: Dictionary, phase: String = 
 
 	var resource_inputs = command.get("resource_inputs", [])
 	if typeof(resource_inputs) == TYPE_ARRAY and not resource_inputs.is_empty():
-		return _validation_error(
-			"resource_inputs_not_supported",
-			"MVP P3 active breathing does not support resource inputs until inventory exists.",
-			phase,
-			command
-		)
+		if not bool(profile.get("resource_inputs_supported", false)):
+			return _validation_error(
+				"resource_inputs_not_supported",
+				"MVP P3 commands keep resource input bindings explicit, but inventory/resource ownership does not exist yet.",
+				phase,
+				command,
+				{"resource_input_count": resource_inputs.size()}
+			)
 
 	var planned_duration = int(command.get("planned_duration_hours", 1))
 	var min_duration = int(profile.get("min_duration_hours", 1))
@@ -187,6 +191,24 @@ func validate_command(room, data_registry, command: Dictionary, phase: String = 
 				"Current realm segment is not configured: %s" % segment_id,
 				phase,
 				command
+			)
+
+	if str(profile.get("settlement_kind", "cultivation")) == "method_study":
+		var target_method_id = str(command.get("target_method_id", profile.get("default_target_method_id", "")))
+		if target_method_id.is_empty():
+			return _validation_error(
+				"missing_method_study_target",
+				"Method study requires a learned target method.",
+				phase,
+				command
+			)
+		if not room.character_state.has_method_state(target_method_id):
+			return _validation_error(
+				"method_state_not_found",
+				"Method study target is not learned: %s" % target_method_id,
+				phase,
+				command,
+				{"target_method_id": target_method_id}
 			)
 
 	return {
@@ -280,6 +302,18 @@ func _start_command(room, command: Dictionary, profile: Dictionary, world_time: 
 		"code": "execution_started",
 	}
 	room.command_queue.current_command = command.duplicate(true)
+	if str(command.get("action_type", "")) == CommandQueueScript.ACTION_MANAGED_ACTION:
+		room.command_queue.managed_action_state = {
+			"command_id": command.get("command_id", ""),
+			"character_id": command.get("character_id", ""),
+			"started_world_day": int(world_time.get("world_day", 1)),
+			"started_world_hour": int(world_time.get("world_hour", 0)),
+			"planned_duration_hours": int(command.get("planned_duration_hours", 0)),
+			"policy": "explicit_low_interaction",
+			"f1_eligible": bool(profile.get("f1_eligible", false)),
+		}
+	elif not room.command_queue.managed_action_state.is_empty():
+		room.command_queue.managed_action_state = {}
 
 	var replay_entry = room.replay_log.append_event(
 		"command_started",
@@ -336,7 +370,14 @@ func _settle_current_command_hour(room, data_registry, world_time: Dictionary) -
 	var profile = data_registry.get_action_profile(action_type)
 	var segment_id = str(room.character_state.cultivation_state.get("current_realm_segment_id", ""))
 	var segment = data_registry.get_realm_segment(segment_id)
-	var tick_result = room.character_state.apply_cultivation_tick(segment, profile, command, world_time)
+	var settlement_kind = str(profile.get("settlement_kind", "cultivation"))
+	var tick_event_name = "cultivation_tick"
+	var tick_result = {}
+	if settlement_kind == "method_study":
+		tick_event_name = "method_study_tick"
+		tick_result = room.character_state.apply_method_study_tick(profile, command, world_time)
+	else:
+		tick_result = room.character_state.apply_cultivation_tick(segment, profile, command, world_time)
 
 	command["elapsed_hours"] = int(command.get("elapsed_hours", 0)) + 1
 	if bool(tick_result.get("ok", false)):
@@ -345,7 +386,7 @@ func _settle_current_command_hour(room, data_registry, world_time: Dictionary) -
 
 	var replay_entries: Array[Dictionary] = []
 	var tick_entry = room.replay_log.append_event(
-		"cultivation_tick",
+		tick_event_name,
 		world_time,
 		{
 			"tick": tick_result.duplicate(true),
@@ -355,7 +396,7 @@ func _settle_current_command_hour(room, data_registry, world_time: Dictionary) -
 	replay_entries.append(tick_entry)
 
 	var gate_result = {}
-	if bool(tick_result.get("ok", false)) and bool(profile.get("can_trigger_minor_stage_advance", false)):
+	if settlement_kind != "method_study" and bool(tick_result.get("ok", false)) and bool(profile.get("can_trigger_minor_stage_advance", false)):
 		var next_segment = data_registry.get_realm_segment(str(segment.get("next_segment_id", "")))
 		gate_result = room.character_state.apply_minor_stage_gate(segment, next_segment, world_time)
 		if bool(gate_result.get("advanced", false)):
@@ -411,6 +452,10 @@ func _complete_or_continue_current_command(room, data_registry, world_time: Dict
 			"command": command.duplicate(true),
 		}
 	)
+	var managed_action_completed = false
+	if str(command.get("action_type", "")) == CommandQueueScript.ACTION_MANAGED_ACTION:
+		managed_action_completed = true
+		room.command_queue.managed_action_state = {}
 	room.command_queue.current_command = {}
 
 	var next_setup = _promote_next_or_fallback(room, data_registry, world_time, "queue_empty")
@@ -423,6 +468,7 @@ func _complete_or_continue_current_command(room, data_registry, world_time: Dict
 		"ok": true,
 		"code": "command_completed",
 		"command": command,
+		"managed_action_completed": managed_action_completed,
 		"next_setup": next_setup,
 		"visible_summary": "Command completed: %s. %s" % [
 			command.get("action_type", ""),

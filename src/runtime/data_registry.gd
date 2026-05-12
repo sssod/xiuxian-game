@@ -94,6 +94,21 @@ func get_action_profile(action_type: String) -> Dictionary:
 	return profile.duplicate(true)
 
 
+func get_action_min_duration(action_type: String, fallback: int = 1) -> int:
+	var profile = get_action_profile(action_type)
+	if profile.is_empty():
+		return fallback
+	var duration = int(profile.get("min_duration_hours", fallback))
+	if duration < 1:
+		return 1
+	return duration
+
+
+func get_default_method_study_target() -> String:
+	var profile = get_action_profile("method_study")
+	return str(profile.get("default_target_method_id", ""))
+
+
 func get_realm_segment(segment_id: String) -> Dictionary:
 	var balance = config.get("cultivation_balance", {})
 	if typeof(balance) != TYPE_DICTIONARY:

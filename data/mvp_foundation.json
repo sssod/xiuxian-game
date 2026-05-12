@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_label": "mvp-p3-active-breathing",
+  "build_label": "mvp-p3-command-templates",
   "default_world_seed": 424242,
   "time": {
     "hours_per_day": 24,
@@ -59,7 +59,25 @@
       "bottleneck_state": "none",
       "foundation_quality": 0.5,
       "meridian_pressure": 0.0
-    }
+    },
+    "method_states": [
+      {
+        "method_state_id": "method_state_basic_wood_breathing",
+        "method_id": "basic_wood_breathing",
+        "method_type": "dao_method",
+        "display_name": "Basic Wood Breathing",
+        "learned_from_carrier_id": "",
+        "mastery_level": 1,
+        "mastery_exp": 0.0,
+        "mastery_exp_to_next": 10.0,
+        "max_mastery_level": 5,
+        "mastery_norm": 0.2,
+        "unlocked_action_tags": ["active_breathing"],
+        "unlocked_combat_commands": [],
+        "unlocked_event_option_tags": [],
+        "unlocked_effect_refs": []
+      }
+    ]
   },
   "cultivation_balance": {
     "action_profiles": {
@@ -67,6 +85,7 @@
         "action_type": "active_breathing",
         "display_name": "Active Breathing",
         "source": "explicit_player",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 1.0,
         "compatible_hour_policy": "full",
         "f1_eligible": true,
@@ -74,6 +93,7 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 72,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "pressure_from_overbenchmark_rate": 0.01
       },
@@ -81,6 +101,7 @@
         "action_type": "seclusion_cultivation",
         "display_name": "Seclusion Cultivation",
         "source": "explicit_player",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.9,
         "compatible_hour_policy": "full",
         "f1_eligible": true,
@@ -88,6 +109,7 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 24,
         "max_duration_hours": 720,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "pressure_from_overbenchmark_rate": 0.008
       },
@@ -95,6 +117,7 @@
         "action_type": "auto_circulation",
         "display_name": "Auto Circulation",
         "source": "system_fallback",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.12,
         "compatible_hour_policy": "full",
         "f1_eligible": false,
@@ -102,13 +125,34 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 0,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "pressure_from_overbenchmark_rate": 0.0
+      },
+      "method_study": {
+        "action_type": "method_study",
+        "display_name": "Method Study",
+        "source": "explicit_player",
+        "settlement_kind": "method_study",
+        "base_efficiency_ratio": 0.0,
+        "compatible_hour_policy": "full",
+        "f1_eligible": true,
+        "can_trigger_minor_stage_advance": false,
+        "can_trigger_major_breakthrough": false,
+        "min_duration_hours": 1,
+        "max_duration_hours": 168,
+        "resource_inputs_supported": false,
+        "resource_slot_count": 0,
+        "default_target_method_id": "basic_wood_breathing",
+        "method_mastery_exp_per_hour": 4.0,
+        "mastery_exp_per_level": 10.0,
+        "max_mastery_level": 5
       },
       "consolidation": {
         "action_type": "consolidation",
         "display_name": "Foundation Consolidation",
         "source": "explicit_player",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.0,
         "compatible_hour_policy": "none",
         "f1_eligible": true,
@@ -116,13 +160,16 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 72,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
+        "foundation_quality_gain_per_hour": 0.002,
         "pressure_recovery_per_hour": 0.01
       },
       "managed_action": {
         "action_type": "managed_action",
         "display_name": "Managed Action",
         "source": "explicit_player",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.3,
         "compatible_hour_policy": "full",
         "f1_eligible": true,
@@ -130,6 +177,7 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 168,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "pressure_from_overbenchmark_rate": 0.0
       },
@@ -137,6 +185,7 @@
         "action_type": "fallback_meditate",
         "display_name": "Fallback Meditation",
         "source": "system_fallback",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.08,
         "compatible_hour_policy": "full",
         "f1_eligible": false,
@@ -144,21 +193,29 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 0,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "pressure_from_overbenchmark_rate": 0.0
       },
       "rest": {
         "action_type": "rest",
         "display_name": "Rest",
-        "source": "system_fallback",
+        "source": "explicit_or_system",
+        "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.0,
         "compatible_hour_policy": "none",
-        "f1_eligible": false,
+        "f1_eligible": true,
         "can_trigger_minor_stage_advance": false,
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 0,
+        "resource_inputs_supported": false,
         "resource_slot_count": 0,
+        "bar_recovery_per_hour": {
+          "vitality": 1,
+          "qi": 4,
+          "mind": 2
+        },
         "pressure_recovery_per_hour": 0.02
       }
     },

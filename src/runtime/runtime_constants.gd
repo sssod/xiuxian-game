@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RuntimeConstants
 
-const APP_VERSION = "0.3.0-p3-active-breathing"
+const APP_VERSION = "0.3.1-p3-command-templates"
 const GODOT_VERSION_TARGET = "4.6.2.stable"
 const SAVE_SCHEMA_VERSION = 1
 const DEFAULT_WORLD_SEED = 424242

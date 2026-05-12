@@ -73,6 +73,8 @@ func enqueue_command(
 	var validation = settlement_engine.validate_command(room, data_registry, command, "enqueue")
 	command["last_validation"] = validation.duplicate(true)
 	command["f1_eligible"] = bool(validation.get("f1_eligible", false))
+	if bool(validation.get("ok", false)) and not validation.get("normalized_resource_inputs", []).is_empty():
+		command["resource_inputs"] = validation.get("normalized_resource_inputs", []).duplicate(true)
 	if not bool(validation.get("ok", false)):
 		return {
 			"ok": false,
@@ -101,6 +103,19 @@ func enqueue_active_breathing(room, planned_duration_hours: int = 4) -> Dictiona
 	return enqueue_command(room, "active_breathing", planned_duration_hours)
 
 
+func enqueue_active_breathing_with_resource(
+		room,
+		planned_duration_hours: int = 2,
+		resource_item_template_id: String = "clear_qi_pill_mvp"
+) -> Dictionary:
+	return enqueue_command(
+		room,
+		"active_breathing",
+		planned_duration_hours,
+		[{"resource_item_template_id": resource_item_template_id, "quantity": 1}]
+	)
+
+
 func enqueue_seclusion_cultivation(room, planned_duration_hours: int = 24) -> Dictionary:
 	return enqueue_command(room, "seclusion_cultivation", planned_duration_hours)
 
@@ -118,8 +133,18 @@ func enqueue_method_study(room, planned_duration_hours: int = 4, target_method_i
 	)
 
 
-func enqueue_consolidation(room, planned_duration_hours: int = 4) -> Dictionary:
-	return enqueue_command(room, "consolidation", planned_duration_hours)
+func enqueue_consolidation(room, planned_duration_hours: int = 4, settle_residual_effects: bool = false) -> Dictionary:
+	return enqueue_command(
+		room,
+		"consolidation",
+		planned_duration_hours,
+		[],
+		{"settle_residual_effects": settle_residual_effects}
+	)
+
+
+func enqueue_residual_consolidation(room, planned_duration_hours: int = 4) -> Dictionary:
+	return enqueue_consolidation(room, planned_duration_hours, true)
 
 
 func enqueue_managed_action(room, planned_duration_hours: int = 8) -> Dictionary:
@@ -440,7 +465,7 @@ func run_command_template_smoke() -> Dictionary:
 	)
 	var resource_rejection_ok = (
 		not bool(resource_rejection.get("ok", false))
-		and resource_rejection.get("code", "") == "resource_inputs_not_supported"
+		and resource_rejection.get("code", "") == "resource_not_owned"
 	)
 
 	var seclusion_room = create_single_player_room()
@@ -570,4 +595,125 @@ func run_command_template_smoke() -> Dictionary:
 			"bars_after": rest_room.character_state.derived_bars.duplicate(true),
 		},
 		"ui_state": ui_adapter.from_room(method_room, method_results.back()),
+	}
+
+
+func run_resource_input_smoke() -> Dictionary:
+	var config_status = load_config()
+	var baseline_room = create_single_player_room()
+	var baseline_queue = enqueue_active_breathing(baseline_room, 2)
+	var baseline_results = advance_hours(baseline_room, 1, RuntimeConstantsScript.SPEED_F1)
+	var baseline_cp_after_one = float(baseline_room.character_state.cultivation_state.get("cultivation_points", 0.0))
+
+	var resource_room = create_single_player_room()
+	var resource_item_id = data_registry.get_default_resource_input_item()
+	var quantity_before_enqueue = resource_room.character_state.get_inventory_quantity(resource_item_id)
+	var resource_queue = enqueue_active_breathing_with_resource(resource_room, 2, resource_item_id)
+	var quantity_after_enqueue = resource_room.character_state.get_inventory_quantity(resource_item_id)
+	var first_results = advance_hours(resource_room, 1, RuntimeConstantsScript.SPEED_F1)
+	var quantity_after_start = resource_room.character_state.get_inventory_quantity(resource_item_id)
+	var resource_cp_after_one = float(resource_room.character_state.cultivation_state.get("cultivation_points", 0.0))
+	var active_effects_after_one = resource_room.character_state.active_resource_effects.duplicate(true)
+	var stacking_rejection = enqueue_active_breathing_with_resource(resource_room, 1, resource_item_id)
+	var stacking_rejection_ok = (
+		not bool(stacking_rejection.get("ok", false))
+		and stacking_rejection.get("code", "") == "resource_stacking_limit"
+	)
+
+	var save_result = save_room(resource_room)
+	var load_result = load_room()
+	var loaded_room = load_result.get("room", null)
+	var preserved_residual = (
+		bool(load_result.get("ok", false))
+		and loaded_room != null
+		and loaded_room.character_state.active_resource_effects.size() == resource_room.character_state.active_resource_effects.size()
+		and loaded_room.character_state.get_inventory_quantity(resource_item_id) == quantity_after_start
+	)
+
+	var second_results: Array = []
+	var cp_before_second = 0.0
+	var cp_after_second = 0.0
+	if loaded_room != null:
+		cp_before_second = float(loaded_room.character_state.cultivation_state.get("cultivation_points", 0.0))
+		second_results = advance_hours(loaded_room, 1, RuntimeConstantsScript.SPEED_F1)
+		cp_after_second = float(loaded_room.character_state.cultivation_state.get("cultivation_points", 0.0))
+
+	var residual_after_completion = {}
+	if loaded_room != null:
+		residual_after_completion = loaded_room.character_state.active_resource_effects.duplicate(true)
+
+	var cp_before_clearance = cp_after_second
+	var clear_queue = {}
+	var clear_results: Array = []
+	var residual_cleared = false
+	var cp_after_clearance = cp_after_second
+	if loaded_room != null:
+		clear_queue = enqueue_residual_consolidation(loaded_room, 2)
+		clear_results = advance_hours(loaded_room, 2, RuntimeConstantsScript.SPEED_F1)
+		residual_cleared = loaded_room.character_state.active_resource_effects.is_empty()
+		cp_after_clearance = float(loaded_room.character_state.cultivation_state.get("cultivation_points", 0.0))
+
+	var first_result_has_resource_delta = false
+	if not first_results.is_empty():
+		var first_result = first_results.back()
+		var resource_delta = first_result.deltas.get("command", {}).get("tick", {}).get("tick", {}).get("active_resource_effect_delta", {})
+		first_result_has_resource_delta = float(resource_delta.get("cultivation_resource_aura_input", 0.0)) > 0.0
+
+	var clearance_result_has_no_cp_gain = is_equal_approx(cp_after_clearance, cp_before_clearance)
+	var ok = (
+		bool(config_status.get("ok", false))
+		and bool(baseline_queue.get("ok", false))
+		and bool(resource_queue.get("ok", false))
+		and quantity_before_enqueue > quantity_after_start
+		and quantity_before_enqueue == quantity_after_enqueue
+		and resource_cp_after_one > baseline_cp_after_one
+		and not active_effects_after_one.is_empty()
+		and stacking_rejection_ok
+		and bool(save_result.get("ok", false))
+		and preserved_residual
+		and second_results.size() == 1
+		and cp_after_second > cp_before_second
+		and not residual_after_completion.is_empty()
+		and bool(clear_queue.get("ok", false))
+		and clear_results.size() == 2
+		and residual_cleared
+		and clearance_result_has_no_cp_gain
+		and first_result_has_resource_delta
+	)
+
+	return {
+		"ok": ok,
+		"config": config_status,
+		"baseline": {
+			"queue": baseline_queue,
+			"result_count": baseline_results.size(),
+			"cp_after_one": baseline_cp_after_one,
+		},
+		"resource_input": {
+			"queue": resource_queue,
+			"quantity_before_enqueue": quantity_before_enqueue,
+			"quantity_after_enqueue": quantity_after_enqueue,
+			"quantity_after_start": quantity_after_start,
+			"cp_after_one": resource_cp_after_one,
+			"active_effects_after_one": active_effects_after_one,
+			"first_result_has_resource_delta": first_result_has_resource_delta,
+		},
+		"stacking_rejection": {
+			"ok": stacking_rejection_ok,
+			"code": stacking_rejection.get("code", ""),
+			"validation": stacking_rejection.get("validation", {}),
+		},
+		"save_load": {
+			"save": save_result,
+			"load_ok": load_result.get("ok", false),
+			"preserved_residual": preserved_residual,
+		},
+		"residual_clearance": {
+			"queue": clear_queue,
+			"result_count": clear_results.size(),
+			"residual_cleared": residual_cleared,
+			"cp_before_clearance": cp_before_clearance,
+			"cp_after_clearance": cp_after_clearance,
+		},
+		"ui_state": ui_adapter.from_room(loaded_room, clear_results.back()) if loaded_room != null and not clear_results.is_empty() else {},
 	}

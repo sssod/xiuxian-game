@@ -109,6 +109,30 @@ func get_default_method_study_target() -> String:
 	return str(profile.get("default_target_method_id", ""))
 
 
+func get_default_resource_input_item() -> String:
+	var balance = config.get("cultivation_balance", {})
+	if typeof(balance) != TYPE_DICTIONARY:
+		return "clear_qi_pill_mvp"
+	return str(balance.get("default_resource_input_item", "clear_qi_pill_mvp"))
+
+
+func get_resource_effect_template(resource_effect_template_id: String) -> Dictionary:
+	var balance = config.get("cultivation_balance", {})
+	if typeof(balance) != TYPE_DICTIONARY:
+		return {}
+
+	var templates = balance.get("resource_effect_templates", {})
+	if typeof(templates) != TYPE_DICTIONARY:
+		return {}
+
+	var template = templates.get(resource_effect_template_id, {})
+	if typeof(template) != TYPE_DICTIONARY:
+		return {}
+	var output = template.duplicate(true)
+	output["resource_effect_template_id"] = resource_effect_template_id
+	return output
+
+
 func get_realm_segment(segment_id: String) -> Dictionary:
 	var balance = config.get("cultivation_balance", {})
 	if typeof(balance) != TYPE_DICTIONARY:

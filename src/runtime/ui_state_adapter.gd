@@ -8,6 +8,7 @@ func from_room(room, last_result = null) -> Dictionary:
 		result_summary = last_result.visible_logs[0]
 	var character_summary = room.character_state.summary()
 	var method_summary = _method_summary(room.character_state.method_states)
+	var resource_summary = _resource_summary(room.character_state.inventory, room.character_state.active_resource_effects)
 	var current_command = room.command_queue.current_command
 	var command_summary = room.command_queue.command_label(current_command)
 	var future_commands: Array[String] = []
@@ -34,6 +35,10 @@ func from_room(room, last_result = null) -> Dictionary:
 		"cultivation_state": room.character_state.cultivation_state.duplicate(true),
 		"method_summary": method_summary,
 		"method_states": room.character_state.method_states.duplicate(true),
+		"resource_summary": resource_summary,
+		"inventory": room.character_state.inventory.duplicate(true),
+		"active_resource_effects": room.character_state.active_resource_effects.duplicate(true),
+		"resource_use_log_count": room.character_state.resource_use_logs.size(),
 		"result_summary": result_summary,
 		"replay_entries": room.replay_log.entries.size(),
 		"result_packages": room.result_history.size(),
@@ -55,3 +60,37 @@ func _method_summary(method_states: Dictionary) -> String:
 			float(state.get("mastery_norm", 0.0)) * 100.0,
 		])
 	return ", ".join(summaries)
+
+
+func _resource_summary(inventory: Dictionary, active_resource_effects: Dictionary) -> String:
+	var parts: Array[String] = []
+	var items = inventory.get("items", {})
+	if typeof(items) == TYPE_DICTIONARY:
+		for item_id in items.keys():
+			var item = items.get(item_id, {})
+			if typeof(item) != TYPE_DICTIONARY:
+				continue
+			parts.append("%s x%d" % [
+				item.get("display_name", item_id),
+				int(item.get("quantity", 0)),
+			])
+
+	var active_parts: Array[String] = []
+	for effect_id in active_resource_effects.keys():
+		var effect = active_resource_effects.get(effect_id, {})
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		active_parts.append("%s %.1fh %s" % [
+			effect.get("display_name", effect_id),
+			float(effect.get("remaining_effective_hours", 0.0)),
+			effect.get("state", "active"),
+		])
+
+	if parts.is_empty():
+		parts.append("no inventory resources")
+	if active_parts.is_empty():
+		active_parts.append("no active residual effects")
+	return "Inventory: %s | Residual: %s" % [
+		", ".join(parts),
+		", ".join(active_parts),
+	]

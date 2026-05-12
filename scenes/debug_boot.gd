@@ -42,7 +42,7 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 28)
 	layout.add_child(title)
 
-	for key in ["build", "config", "seed", "room", "character", "method", "time", "queue", "slot", "save", "result", "replay"]:
+	for key in ["build", "config", "seed", "room", "character", "method", "resource", "time", "queue", "slot", "save", "result", "replay"]:
 		var label = Label.new()
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		labels[key] = label
@@ -82,6 +82,12 @@ func _build_ui() -> void:
 	buttons["active_breathing"] = active_breathing_button
 	button_row.add_child(active_breathing_button)
 
+	var resource_breathing_button = Button.new()
+	resource_breathing_button.text = "Queue Breathing + Pill"
+	resource_breathing_button.pressed.connect(_on_resource_breathing_pressed)
+	buttons["resource_breathing"] = resource_breathing_button
+	button_row.add_child(resource_breathing_button)
+
 	var seclusion_button = Button.new()
 	seclusion_button.text = "Queue Seclusion"
 	seclusion_button.pressed.connect(_on_seclusion_pressed)
@@ -99,6 +105,12 @@ func _build_ui() -> void:
 	consolidation_button.pressed.connect(_on_consolidation_pressed)
 	buttons["consolidation"] = consolidation_button
 	button_row.add_child(consolidation_button)
+
+	var residual_consolidation_button = Button.new()
+	residual_consolidation_button.text = "Settle Residue"
+	residual_consolidation_button.pressed.connect(_on_residual_consolidation_pressed)
+	buttons["residual_consolidation"] = residual_consolidation_button
+	button_row.add_child(residual_consolidation_button)
 
 	var managed_button = Button.new()
 	managed_button.text = "Queue Managed"
@@ -157,6 +169,17 @@ func _on_active_breathing_pressed() -> void:
 	_refresh()
 
 
+func _on_resource_breathing_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_active_breathing_with_resource(
+		room,
+		2,
+		runtime.data_registry.get_default_resource_input_item()
+	)
+	_refresh()
+
+
 func _on_seclusion_pressed() -> void:
 	if room == null:
 		room = runtime.create_single_player_room()
@@ -175,6 +198,13 @@ func _on_consolidation_pressed() -> void:
 	if room == null:
 		room = runtime.create_single_player_room()
 	save_status = runtime.enqueue_consolidation(room, runtime.data_registry.get_smoke_post_load_f1_hours())
+	_refresh()
+
+
+func _on_residual_consolidation_pressed() -> void:
+	if room == null:
+		room = runtime.create_single_player_room()
+	save_status = runtime.enqueue_residual_consolidation(room, runtime.data_registry.get_smoke_post_load_f1_hours())
 	_refresh()
 
 
@@ -232,6 +262,7 @@ func _refresh() -> void:
 		labels["room"].text = "Room: no active room"
 		labels["character"].text = "Character: unavailable"
 		labels["method"].text = "Method: unavailable"
+		labels["resource"].text = "Resources: unavailable"
 		labels["time"].text = "Time: unavailable"
 		labels["queue"].text = "Queue: unavailable"
 		labels["slot"].text = _format_save_slot_status()
@@ -250,6 +281,10 @@ func _refresh() -> void:
 	]
 	labels["character"].text = "Character: %s" % ui_state.get("character_summary", "")
 	labels["method"].text = "Method: %s" % ui_state.get("method_summary", "")
+	labels["resource"].text = "Resources: %s | resource logs=%d" % [
+		ui_state.get("resource_summary", ""),
+		ui_state.get("resource_use_log_count", 0),
+	]
 	labels["time"].text = "World time: %s | Speed: %s" % [
 		ui_state.get("world_time_label", ""),
 		ui_state.get("speed_state", ""),

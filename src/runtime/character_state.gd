@@ -12,6 +12,11 @@ var derived_bars: Dictionary = {}
 var lifespan_state: Dictionary = {}
 var cultivation_state: Dictionary = {}
 var method_states: Dictionary = {}
+var inventory: Dictionary = {}
+var active_resource_effects: Dictionary = {}
+var resource_use_logs: Array[Dictionary] = []
+var next_resource_effect_sequence = 1
+var next_resource_log_sequence = 1
 var initial_logs: Array[String] = []
 
 
@@ -30,6 +35,7 @@ func initialize_first_entry(config: Dictionary, world_seed: int, world_time: Dic
 	var bars_config = _dict_value(config, "derived_bars")
 	var cultivation_config = _dict_value(config, "cultivation_state")
 	var method_state_configs = _array_value(config.get("method_states", []))
+	var inventory_config = _dict_value(config, "inventory")
 
 	true_spirit_id = str(true_spirit_config.get("spirit_id", "true_spirit_%d" % world_seed))
 	character_id = str(current_life_config.get("character_id", "character_%d_01" % world_seed))
@@ -107,6 +113,11 @@ func initialize_first_entry(config: Dictionary, world_seed: int, world_time: Dic
 	}
 
 	method_states = _method_states_from_config(method_state_configs, world_time)
+	inventory = _inventory_from_config(inventory_config)
+	active_resource_effects = {}
+	resource_use_logs = []
+	next_resource_effect_sequence = 1
+	next_resource_log_sequence = 1
 
 	initial_logs = [
 		"True spirit initialized: %s." % true_spirit_state.get("true_name", ""),
@@ -148,6 +159,376 @@ func get_method_state(method_id: String) -> Dictionary:
 	return state.duplicate(true)
 
 
+func get_inventory_item(resource_item_template_id: String) -> Dictionary:
+	var items = inventory.get("items", {})
+	if typeof(items) != TYPE_DICTIONARY:
+		return {}
+	var item = items.get(resource_item_template_id, {})
+	if typeof(item) != TYPE_DICTIONARY:
+		return {}
+	return item.duplicate(true)
+
+
+func get_inventory_quantity(resource_item_template_id: String) -> int:
+	var item = get_inventory_item(resource_item_template_id)
+	if item.is_empty():
+		return 0
+	return int(item.get("quantity", 0))
+
+
+func has_active_resource_stacking_group(stacking_group: String) -> bool:
+	if stacking_group.is_empty():
+		return false
+	for effect_id in active_resource_effects.keys():
+		var effect = active_resource_effects.get(effect_id, {})
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		if str(effect.get("stacking_group", "")) != stacking_group:
+			continue
+		var state = str(effect.get("state", "active"))
+		if state == "active" or state == "suspended" or state == "decaying":
+			return true
+	return false
+
+
+func active_resource_effect_summary() -> String:
+	var summaries: Array[String] = []
+	for effect_id in active_resource_effects.keys():
+		var effect = active_resource_effects.get(effect_id, {})
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		summaries.append("%s %.1fh %s" % [
+			effect.get("display_name", effect_id),
+			float(effect.get("remaining_effective_hours", 0.0)),
+			effect.get("state", "active"),
+		])
+	if summaries.is_empty():
+		return "No active resource effects."
+	return ", ".join(summaries)
+
+
+func validate_resource_input_binding(
+		raw_input: Dictionary,
+		inventory_item: Dictionary,
+		effect_template: Dictionary,
+		action_profile: Dictionary,
+		command: Dictionary
+) -> Dictionary:
+	var resource_item_template_id = str(raw_input.get("resource_item_template_id", raw_input.get("resource_id", "")))
+	if resource_item_template_id.is_empty():
+		return _resource_validation_error("missing_resource_item_template_id", "Resource input is missing resource_item_template_id.")
+
+	var quantity = int(raw_input.get("quantity", 1))
+	if quantity != 1:
+		return _resource_validation_error(
+			"resource_input_quantity_unsupported",
+			"MVP P3 supports one unit per resource input binding.",
+			{"quantity": quantity}
+		)
+
+	if inventory_item.is_empty() or int(inventory_item.get("quantity", 0)) < quantity:
+		return _resource_validation_error(
+			"resource_not_owned",
+			"Resource input is not available in the character inventory.",
+			{"resource_item_template_id": resource_item_template_id}
+		)
+
+	var effect_template_id = str(raw_input.get("resource_effect_template_id", inventory_item.get("resource_effect_template_id", "")))
+	if effect_template_id.is_empty():
+		return _resource_validation_error(
+			"missing_resource_effect_template",
+			"Resource input has no effect template.",
+			{"resource_item_template_id": resource_item_template_id}
+		)
+
+	if str(effect_template.get("resource_effect_template_id", "")) != effect_template_id:
+		return _resource_validation_error(
+			"resource_effect_template_mismatch",
+			"Resource input effect template does not match the item.",
+			{
+				"resource_item_template_id": resource_item_template_id,
+				"resource_effect_template_id": effect_template_id,
+			}
+		)
+
+	if str(effect_template.get("use_mode", "")) != "action_resource_input":
+		return _resource_validation_error(
+			"resource_use_mode_not_supported",
+			"Resource input must use action_resource_input mode.",
+			{"use_mode": effect_template.get("use_mode", "")}
+		)
+
+	var effect_type = str(effect_template.get("effect_type", ""))
+	var compatible_effect_types = _string_array(action_profile.get("compatible_resource_effect_types", []))
+	if not compatible_effect_types.has(effect_type):
+		return _resource_validation_error(
+			"resource_effect_type_not_compatible",
+			"Resource effect type is not compatible with this action.",
+			{
+				"effect_type": effect_type,
+				"action_type": command.get("action_type", ""),
+			}
+		)
+
+	if not _effect_template_supports_action(effect_template, action_profile, str(command.get("action_type", ""))):
+		return _resource_validation_error(
+			"resource_action_tag_not_compatible",
+			"Resource effect is not compatible with this action tag.",
+			{
+				"resource_effect_template_id": effect_template_id,
+				"action_type": command.get("action_type", ""),
+			}
+		)
+
+	var stacking_group = str(effect_template.get("stacking_group", effect_template_id))
+	if has_active_resource_stacking_group(stacking_group):
+		return _resource_validation_error(
+			"resource_stacking_limit",
+			"An active resource effect in the same stacking group already exists.",
+			{"stacking_group": stacking_group}
+		)
+
+	return {
+		"ok": true,
+		"code": "resource_input_valid",
+		"resource_item_template_id": resource_item_template_id,
+		"resource_effect_template_id": effect_template_id,
+		"effect_type": effect_type,
+		"stacking_group": stacking_group,
+	}
+
+
+func activate_resource_inputs(command: Dictionary, world_time: Dictionary) -> Dictionary:
+	var resource_inputs = command.get("resource_inputs", [])
+	if typeof(resource_inputs) != TYPE_ARRAY or resource_inputs.is_empty():
+		return {
+			"ok": true,
+			"resource_inputs": [],
+			"activated_effects": [],
+			"resource_use_log_refs": [],
+		}
+
+	var updated_inputs: Array[Dictionary] = []
+	var activated_effects: Array[Dictionary] = []
+	var log_refs: Array[String] = []
+	for input in resource_inputs:
+		if typeof(input) != TYPE_DICTIONARY:
+			return _resource_validation_error("invalid_resource_input", "Resource input must be a dictionary.")
+		var binding = input.duplicate(true)
+		if int(binding.get("consumed_at_world_day", 0)) > 0:
+			updated_inputs.append(binding)
+			continue
+
+		var resource_item_template_id = str(binding.get("resource_item_template_id", ""))
+		var quantity = int(binding.get("quantity", 1))
+		var item = get_inventory_item(resource_item_template_id)
+		if item.is_empty() or int(item.get("quantity", 0)) < quantity:
+			return _resource_validation_error(
+				"resource_not_owned_at_start",
+				"Resource input is no longer available when the action starts.",
+				{"resource_item_template_id": resource_item_template_id}
+			)
+
+		item["quantity"] = int(item.get("quantity", 0)) - quantity
+		var items = inventory.get("items", {})
+		if typeof(items) != TYPE_DICTIONARY:
+			items = {}
+		items[resource_item_template_id] = item.duplicate(true)
+		inventory["items"] = items
+
+		var log_entry = _append_resource_log(
+			"resource_input_consumed",
+			world_time,
+			{
+				"command_id": command.get("command_id", ""),
+				"binding_id": binding.get("binding_id", ""),
+				"resource_item_template_id": resource_item_template_id,
+				"resource_effect_template_id": binding.get("resource_effect_template_id", ""),
+				"quantity": quantity,
+				"remaining_quantity": item.get("quantity", 0),
+			}
+		)
+		log_refs.append(str(log_entry.get("log_id", "")))
+
+		binding["consumed_at_world_day"] = int(world_time.get("world_day", 1))
+		binding["consumed_at_world_hour"] = int(world_time.get("world_hour", 0))
+		binding["resource_use_log_refs"] = [str(log_entry.get("log_id", ""))]
+		var active_effect = _active_resource_effect_from_binding(binding, command, world_time, str(log_entry.get("log_id", "")))
+		binding["active_effect_ref"] = active_effect.get("effect_id", "")
+		active_resource_effects[str(active_effect.get("effect_id", ""))] = active_effect.duplicate(true)
+		activated_effects.append(active_effect.duplicate(true))
+		updated_inputs.append(binding)
+
+	return {
+		"ok": true,
+		"resource_inputs": updated_inputs,
+		"activated_effects": activated_effects,
+		"resource_use_log_refs": log_refs,
+	}
+
+
+func settle_resource_effects_for_action(
+		action_type: String,
+		action_profile: Dictionary,
+		world_time: Dictionary,
+		compatible_hours: float
+) -> Dictionary:
+	var applied_effects: Array[Dictionary] = []
+	var idle_effects: Array[Dictionary] = []
+	var exhausted_effects: Array[Dictionary] = []
+	var total_cultivation_aura = 0.0
+	var total_cp_gain = 0.0
+	var pressure_delta = 0.0
+
+	for effect_id in active_resource_effects.keys():
+		var effect = active_resource_effects.get(effect_id, {})
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+
+		var is_compatible = _effect_supports_action(effect, action_profile, action_type)
+		if is_compatible and compatible_hours > 0.0:
+			var applied_hours = minf(compatible_hours, float(effect.get("remaining_effective_hours", 0.0)))
+			if applied_hours <= 0.0:
+				continue
+			var actual_unit_rate = float(effect.get("actual_unit_effect_rate", effect.get("unit_effect_rate", 0.0)))
+			var amount = actual_unit_rate * applied_hours
+			var cp_ratio = float(effect.get("resource_to_cp_ratio", 1.0))
+			var cp_gain = amount * cp_ratio
+			var before_hours = float(effect.get("remaining_effective_hours", 0.0))
+			var after_hours = maxf(before_hours - applied_hours, 0.0)
+			effect["remaining_effective_hours"] = after_hours
+			effect["remaining_effect_amount"] = actual_unit_rate * after_hours
+			effect["last_applied_world_day"] = int(world_time.get("world_day", 1))
+			effect["last_applied_world_hour"] = int(world_time.get("world_hour", 0))
+			effect["state"] = "active" if after_hours > 0.0 else "exhausted"
+			total_cultivation_aura += amount
+			total_cp_gain += cp_gain
+			pressure_delta += float(effect.get("pressure_per_applied_hour", 0.0)) * applied_hours
+
+			var applied = {
+				"effect_id": effect.get("effect_id", ""),
+				"display_name": effect.get("display_name", ""),
+				"effect_type": effect.get("effect_type", ""),
+				"applied_effective_hours": applied_hours,
+				"applied_amount": amount,
+				"cultivation_points_gain": cp_gain,
+				"remaining_effective_hours_before": before_hours,
+				"remaining_effective_hours_after": after_hours,
+			}
+			applied_effects.append(applied)
+			if after_hours <= 0.0:
+				exhausted_effects.append(effect.duplicate(true))
+			else:
+				active_resource_effects[effect_id] = effect.duplicate(true)
+		else:
+			effect["idle_world_hours"] = int(effect.get("idle_world_hours", 0)) + 1
+			effect["state"] = "suspended"
+			active_resource_effects[effect_id] = effect.duplicate(true)
+			idle_effects.append({
+				"effect_id": effect.get("effect_id", ""),
+				"display_name": effect.get("display_name", ""),
+				"idle_world_hours": effect.get("idle_world_hours", 0),
+				"remaining_effective_hours": effect.get("remaining_effective_hours", 0.0),
+				"residual_policy": effect.get("residual_policy", ""),
+			})
+
+	for effect in exhausted_effects:
+		active_resource_effects.erase(str(effect.get("effect_id", "")))
+		_append_resource_log(
+			"resource_effect_exhausted",
+			world_time,
+			{
+				"effect_id": effect.get("effect_id", ""),
+				"resource_effect_template_id": effect.get("resource_effect_template_id", ""),
+				"source_command_id": effect.get("source_command_id", ""),
+			}
+		)
+
+	return {
+		"cultivation_resource_aura_input": total_cultivation_aura,
+		"cultivation_points_gain": total_cp_gain,
+		"meridian_pressure_delta": pressure_delta,
+		"applied_effects": applied_effects,
+		"idle_effects": idle_effects,
+		"exhausted_effects": exhausted_effects,
+		"active_effects_after": active_resource_effects.duplicate(true),
+	}
+
+
+func settle_residual_effects_by_consolidation(
+		action_profile: Dictionary,
+		command: Dictionary,
+		world_time: Dictionary,
+		compatible_hours: float
+) -> Dictionary:
+	if compatible_hours <= 0.0 or not bool(command.get("settle_residual_effects", false)):
+		return {
+			"residual_effect_clearance": [],
+			"settled_amount": 0.0,
+			"cleared_effects": [],
+		}
+
+	var clearance: Array[Dictionary] = []
+	var cleared_effects: Array[Dictionary] = []
+	var settled_amount = 0.0
+	for effect_id in active_resource_effects.keys():
+		var effect = active_resource_effects.get(effect_id, {})
+		if typeof(effect) != TYPE_DICTIONARY:
+			continue
+		if not bool(effect.get("can_be_settled_by_consolidation", false)):
+			continue
+
+		var settled_hours = minf(compatible_hours, float(effect.get("remaining_effective_hours", 0.0)))
+		if settled_hours <= 0.0:
+			continue
+
+		var actual_unit_rate = float(effect.get("actual_unit_effect_rate", effect.get("unit_effect_rate", 0.0)))
+		var amount = actual_unit_rate * settled_hours
+		var before_hours = float(effect.get("remaining_effective_hours", 0.0))
+		var after_hours = maxf(before_hours - settled_hours, 0.0)
+		settled_amount += amount
+		effect["remaining_effective_hours"] = after_hours
+		effect["remaining_effect_amount"] = actual_unit_rate * after_hours
+		effect["last_applied_world_day"] = int(world_time.get("world_day", 1))
+		effect["last_applied_world_hour"] = int(world_time.get("world_hour", 0))
+		effect["state"] = "active" if after_hours > 0.0 else "resolved"
+
+		var cleared = {
+			"effect_id": effect.get("effect_id", ""),
+			"display_name": effect.get("display_name", ""),
+			"settled_effective_hours": settled_hours,
+			"settled_amount": amount,
+			"remaining_effective_hours_before": before_hours,
+			"remaining_effective_hours_after": after_hours,
+			"settlement_policy": effect.get("settlement_policy", "suppress_side_effect"),
+		}
+		clearance.append(cleared)
+		if after_hours <= 0.0:
+			cleared_effects.append(effect.duplicate(true))
+		else:
+			active_resource_effects[effect_id] = effect.duplicate(true)
+
+	for effect in cleared_effects:
+		active_resource_effects.erase(str(effect.get("effect_id", "")))
+		_append_resource_log(
+			"resource_effect_cleared_by_consolidation",
+			world_time,
+			{
+				"effect_id": effect.get("effect_id", ""),
+				"resource_effect_template_id": effect.get("resource_effect_template_id", ""),
+				"command_id": command.get("command_id", ""),
+			}
+		)
+
+	return {
+		"residual_effect_clearance": clearance,
+		"settled_amount": settled_amount,
+		"cleared_effects": cleared_effects,
+		"active_effects_after": active_resource_effects.duplicate(true),
+		"pressure_prevention": settled_amount * float(action_profile.get("residual_settlement_pressure_prevention_ratio", 0.0)),
+	}
+
+
 func apply_cultivation_tick(
 		segment: Dictionary,
 		action_profile: Dictionary,
@@ -182,6 +563,8 @@ func apply_cultivation_tick(
 	var before_pressure = float(cultivation_state.get("meridian_pressure", 0.0))
 	var before_foundation = float(cultivation_state.get("foundation_quality", 0.5))
 	var bar_recovery_summary = {}
+	var resource_effect_summary = {}
+	var residual_settlement_summary = {}
 
 	var target_hours = maxf(float(segment.get("target_elapsed_hours_standard", 1.0)), 1.0)
 	var expected_ratio = maxf(float(segment.get("expected_cultivation_hour_ratio", 1.0)), 0.01)
@@ -214,6 +597,18 @@ func apply_cultivation_tick(
 
 	if action_type == "rest":
 		bar_recovery_summary = _apply_bar_recovery(action_profile)
+
+	if action_type == "consolidation":
+		residual_settlement_summary = settle_residual_effects_by_consolidation(action_profile, command, world_time, 1.0)
+	else:
+		resource_effect_summary = settle_resource_effects_for_action(
+			action_type,
+			action_profile,
+			world_time,
+			compatible_hours
+		)
+		cp_gain += float(resource_effect_summary.get("cultivation_points_gain", 0.0))
+		pressure_delta += float(resource_effect_summary.get("meridian_pressure_delta", 0.0))
 
 	var after_cp = before_cp + cp_gain
 	var after_pressure = clampf(before_pressure + pressure_delta, 0.0, 1.0)
@@ -270,9 +665,10 @@ func apply_cultivation_tick(
 		"foundation_quality_delta": float(cultivation_state.get("foundation_quality", 0.0)) - before_foundation,
 		"purity_delta": 0.0,
 		"bar_recovery_summary": bar_recovery_summary,
-		"resource_effects_consumed": [],
-		"active_resource_effect_delta": [],
-		"resource_use_log_refs": [],
+		"resource_effects_consumed": _resource_inputs_consumed_from_command(command),
+		"active_resource_effect_delta": resource_effect_summary,
+		"residual_settlement_delta": residual_settlement_summary,
+		"resource_use_log_refs": _log_refs_from_command(command),
 		"node_aura_effect": {},
 		"facility_effect": {},
 		"sect_support_effect": {},
@@ -289,8 +685,8 @@ func apply_cultivation_tick(
 			"raw_efficiency_ratio": raw_efficiency_ratio,
 			"clamped_efficiency_ratio": clamped_efficiency_ratio,
 			"environment_aura_input": 0.0,
-			"cultivation_resource_aura_input": 0.0,
-			"resource_inputs_supported": false,
+			"cultivation_resource_aura_input": float(resource_effect_summary.get("cultivation_resource_aura_input", 0.0)),
+			"resource_inputs_supported": bool(action_profile.get("resource_inputs_supported", false)),
 		},
 	}
 
@@ -450,6 +846,11 @@ func to_dict() -> Dictionary:
 		"lifespan_state": lifespan_state.duplicate(true),
 		"cultivation_state": cultivation_state.duplicate(true),
 		"method_states": method_states.duplicate(true),
+		"inventory": inventory.duplicate(true),
+		"active_resource_effects": active_resource_effects.duplicate(true),
+		"resource_use_logs": resource_use_logs.duplicate(true),
+		"next_resource_effect_sequence": next_resource_effect_sequence,
+		"next_resource_log_sequence": next_resource_log_sequence,
 		"initial_logs": initial_logs.duplicate(),
 	}
 
@@ -491,6 +892,28 @@ static func from_dict(data: Dictionary):
 	var method_data = data.get("method_states", {})
 	if typeof(method_data) == TYPE_DICTIONARY:
 		state.method_states = method_data.duplicate(true)
+
+	var inventory_data = data.get("inventory", {})
+	if typeof(inventory_data) == TYPE_DICTIONARY:
+		state.inventory = inventory_data.duplicate(true)
+
+	var active_resource_data = data.get("active_resource_effects", {})
+	if typeof(active_resource_data) == TYPE_DICTIONARY:
+		state.active_resource_effects = active_resource_data.duplicate(true)
+
+	var resource_logs_data = data.get("resource_use_logs", [])
+	if typeof(resource_logs_data) == TYPE_ARRAY:
+		for item in resource_logs_data:
+			if typeof(item) == TYPE_DICTIONARY:
+				state.resource_use_logs.append(item.duplicate(true))
+
+	state.next_resource_effect_sequence = int(data.get("next_resource_effect_sequence", 1))
+	if state.next_resource_effect_sequence < 1:
+		state.next_resource_effect_sequence = 1
+
+	state.next_resource_log_sequence = int(data.get("next_resource_log_sequence", 1))
+	if state.next_resource_log_sequence < 1:
+		state.next_resource_log_sequence = 1
 
 	var logs_data = data.get("initial_logs", [])
 	if typeof(logs_data) == TYPE_ARRAY:
@@ -595,6 +1018,162 @@ func _recover_bar(bar_name: String, amount: float) -> Dictionary:
 		"delta": after - before,
 		"max": max_value,
 	}
+
+
+func _inventory_from_config(config: Dictionary) -> Dictionary:
+	var container_id = str(config.get("container_id", "character_bag"))
+	var items = {}
+	var item_configs = _array_value(config.get("items", []))
+	for item_config in item_configs:
+		if typeof(item_config) != TYPE_DICTIONARY:
+			continue
+		var item = _inventory_item_record(item_config, container_id)
+		var item_template_id = str(item.get("resource_item_template_id", ""))
+		if not item_template_id.is_empty():
+			items[item_template_id] = item
+	return {
+		"container_id": container_id,
+		"items": items,
+	}
+
+
+func _inventory_item_record(config: Dictionary, fallback_container_id: String) -> Dictionary:
+	var quantity = int(config.get("quantity", 0))
+	if quantity < 0:
+		quantity = 0
+	return {
+		"resource_item_template_id": str(config.get("resource_item_template_id", config.get("item_template_id", ""))),
+		"display_name": str(config.get("display_name", config.get("resource_item_template_id", ""))),
+		"quantity": quantity,
+		"source_container_id": str(config.get("source_container_id", fallback_container_id)),
+		"resource_effect_template_id": str(config.get("resource_effect_template_id", "")),
+		"tags": _string_array(config.get("tags", [])),
+	}
+
+
+func _active_resource_effect_from_binding(
+		binding: Dictionary,
+		command: Dictionary,
+		world_time: Dictionary,
+		log_ref: String
+) -> Dictionary:
+	var actual_unit_rate = float(binding.get("actual_unit_effect_rate", binding.get("unit_effect_rate", 0.0)))
+	var max_effective_hours = maxf(float(binding.get("max_effective_hours", 0.0)), 0.0)
+	return {
+		"effect_id": _next_resource_effect_id(),
+		"character_id": character_id,
+		"source_binding_id": str(binding.get("binding_id", "")),
+		"source_command_id": str(command.get("command_id", "")),
+		"resource_item_template_id": str(binding.get("resource_item_template_id", "")),
+		"resource_effect_template_id": str(binding.get("resource_effect_template_id", "")),
+		"display_name": str(binding.get("display_name", binding.get("resource_item_template_id", ""))),
+		"effect_type": str(binding.get("effect_type", "")),
+		"unit_effect_rate": float(binding.get("unit_effect_rate", 0.0)),
+		"actual_unit_effect_rate": actual_unit_rate,
+		"resource_to_cp_ratio": float(binding.get("resource_to_cp_ratio", 1.0)),
+		"pressure_per_applied_hour": float(binding.get("pressure_per_applied_hour", 0.0)),
+		"remaining_effective_hours": max_effective_hours,
+		"remaining_effect_amount": actual_unit_rate * max_effective_hours,
+		"compatible_action_tags": _string_array(binding.get("compatible_action_tags", [])),
+		"compatible_context_tags": _string_array(binding.get("compatible_context_tags", [])),
+		"effect_tick_mode": str(binding.get("effect_tick_mode", "compatible_action_hours")),
+		"residual_policy": str(binding.get("residual_policy", "stable_suspend")),
+		"residual_stability_hours_remaining": float(binding.get("residual_stability_hours", 0.0)),
+		"idle_world_hours": 0,
+		"can_be_settled_by_consolidation": bool(binding.get("can_be_settled_by_consolidation", false)),
+		"settlement_policy": str(binding.get("settlement_policy", "none")),
+		"stacking_group": str(binding.get("stacking_group", "")),
+		"created_world_day": int(world_time.get("world_day", 1)),
+		"created_world_hour": int(world_time.get("world_hour", 0)),
+		"last_applied_world_day": 0,
+		"last_applied_world_hour": 0,
+		"state": "active",
+		"log_refs": [log_ref],
+	}
+
+
+func _append_resource_log(event_type: String, world_time: Dictionary, payload: Dictionary) -> Dictionary:
+	var log_entry = {
+		"log_id": _next_resource_log_id(),
+		"event_type": event_type,
+		"world_day": int(world_time.get("world_day", 1)),
+		"world_hour": int(world_time.get("world_hour", 0)),
+		"payload": payload.duplicate(true),
+	}
+	resource_use_logs.append(log_entry.duplicate(true))
+	return log_entry
+
+
+func _next_resource_effect_id() -> String:
+	var effect_id = "resource_effect_%04d" % next_resource_effect_sequence
+	next_resource_effect_sequence += 1
+	return effect_id
+
+
+func _next_resource_log_id() -> String:
+	var log_id = "resource_log_%04d" % next_resource_log_sequence
+	next_resource_log_sequence += 1
+	return log_id
+
+
+func _resource_validation_error(code: String, error: String, extra: Dictionary = {}) -> Dictionary:
+	var result = {
+		"ok": false,
+		"code": code,
+		"error": error,
+	}
+	for key in extra.keys():
+		result[key] = extra.get(key)
+	return result
+
+
+func _effect_template_supports_action(effect_template: Dictionary, action_profile: Dictionary, action_type: String) -> bool:
+	var effect_tags = _string_array(effect_template.get("compatible_action_tags", []))
+	if effect_tags.has(action_type):
+		return true
+	var action_tags = _string_array(action_profile.get("action_tags", []))
+	for tag in action_tags:
+		if effect_tags.has(tag):
+			return true
+	return false
+
+
+func _effect_supports_action(effect: Dictionary, action_profile: Dictionary, action_type: String) -> bool:
+	if str(effect.get("effect_tick_mode", "compatible_action_hours")) != "compatible_action_hours":
+		return false
+	var effect_tags = _string_array(effect.get("compatible_action_tags", []))
+	if effect_tags.has(action_type):
+		return true
+	var action_tags = _string_array(action_profile.get("action_tags", []))
+	for tag in action_tags:
+		if effect_tags.has(tag):
+			return true
+	return false
+
+
+func _resource_inputs_consumed_from_command(command: Dictionary) -> Array[Dictionary]:
+	var output: Array[Dictionary] = []
+	var resource_inputs = command.get("resource_inputs", [])
+	if typeof(resource_inputs) != TYPE_ARRAY:
+		return output
+	for input in resource_inputs:
+		if typeof(input) == TYPE_DICTIONARY and int(input.get("consumed_at_world_day", 0)) > 0:
+			output.append(input.duplicate(true))
+	return output
+
+
+func _log_refs_from_command(command: Dictionary) -> Array[String]:
+	var refs: Array[String] = []
+	var resource_inputs = command.get("resource_inputs", [])
+	if typeof(resource_inputs) != TYPE_ARRAY:
+		return refs
+	for input in resource_inputs:
+		if typeof(input) != TYPE_DICTIONARY:
+			continue
+		var input_refs = _string_array(input.get("resource_use_log_refs", []))
+		for ref in input_refs:
+			refs.append(ref)
+	return refs
 
 
 static func _dict_value(data: Dictionary, key: String) -> Dictionary:

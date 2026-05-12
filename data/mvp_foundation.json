@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_label": "mvp-p3-command-templates",
+  "build_label": "mvp-p3-resource-inputs",
   "default_world_seed": 424242,
   "time": {
     "hours_per_day": 24,
@@ -77,13 +77,51 @@
         "unlocked_event_option_tags": [],
         "unlocked_effect_refs": []
       }
-    ]
+    ],
+    "inventory": {
+      "container_id": "char_xuanwei_bag",
+      "items": [
+        {
+          "resource_item_template_id": "clear_qi_pill_mvp",
+          "display_name": "Clear Qi Pill",
+          "quantity": 2,
+          "source_container_id": "char_xuanwei_bag",
+          "resource_effect_template_id": "clear_qi_pill_aura_mvp",
+          "tags": ["pill", "cultivation_aura"]
+        }
+      ]
+    }
   },
   "cultivation_balance": {
+    "default_resource_input_item": "clear_qi_pill_mvp",
+    "resource_effect_templates": {
+      "clear_qi_pill_aura_mvp": {
+        "display_name": "Clear Qi Pill",
+        "effect_type": "cultivation_aura",
+        "use_mode": "action_resource_input",
+        "compatible_action_tags": ["active_breathing"],
+        "compatible_context_tags": ["safe_cultivation"],
+        "effect_tick_mode": "compatible_action_hours",
+        "unit_effect_rate": 0.6,
+        "resource_quality_factor": 1.0,
+        "state_factor": 1.0,
+        "resource_to_cp_ratio": 1.0,
+        "pressure_per_applied_hour": 0.001,
+        "max_effective_hours": 4,
+        "activation_policy": "consume_on_action_start",
+        "residual_policy": "stable_suspend",
+        "residual_stability_hours": 24,
+        "can_be_settled_by_consolidation": true,
+        "settlement_policy": "suppress_side_effect",
+        "stacking_group": "mvp_clear_qi_cultivation_aura",
+        "max_same_group_active": 1
+      }
+    },
     "action_profiles": {
       "active_breathing": {
         "action_type": "active_breathing",
         "display_name": "Active Breathing",
+        "action_tags": ["active_breathing", "cultivation"],
         "source": "explicit_player",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 1.0,
@@ -93,13 +131,15 @@
         "can_trigger_major_breakthrough": false,
         "min_duration_hours": 1,
         "max_duration_hours": 72,
-        "resource_inputs_supported": false,
-        "resource_slot_count": 0,
+        "resource_inputs_supported": true,
+        "resource_slot_count": 1,
+        "compatible_resource_effect_types": ["cultivation_aura"],
         "pressure_from_overbenchmark_rate": 0.01
       },
       "seclusion_cultivation": {
         "action_type": "seclusion_cultivation",
         "display_name": "Seclusion Cultivation",
+        "action_tags": ["seclusion_cultivation", "cultivation"],
         "source": "explicit_player",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.9,
@@ -116,6 +156,7 @@
       "auto_circulation": {
         "action_type": "auto_circulation",
         "display_name": "Auto Circulation",
+        "action_tags": ["auto_circulation", "cultivation"],
         "source": "system_fallback",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.12,
@@ -132,6 +173,7 @@
       "method_study": {
         "action_type": "method_study",
         "display_name": "Method Study",
+        "action_tags": ["method_study"],
         "source": "explicit_player",
         "settlement_kind": "method_study",
         "base_efficiency_ratio": 0.0,
@@ -151,6 +193,7 @@
       "consolidation": {
         "action_type": "consolidation",
         "display_name": "Foundation Consolidation",
+        "action_tags": ["consolidation"],
         "source": "explicit_player",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.0,
@@ -163,11 +206,13 @@
         "resource_inputs_supported": false,
         "resource_slot_count": 0,
         "foundation_quality_gain_per_hour": 0.002,
-        "pressure_recovery_per_hour": 0.01
+        "pressure_recovery_per_hour": 0.01,
+        "residual_settlement_pressure_prevention_ratio": 0.1
       },
       "managed_action": {
         "action_type": "managed_action",
         "display_name": "Managed Action",
+        "action_tags": ["managed_action", "cultivation"],
         "source": "explicit_player",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.3,
@@ -184,6 +229,7 @@
       "fallback_meditate": {
         "action_type": "fallback_meditate",
         "display_name": "Fallback Meditation",
+        "action_tags": ["fallback_meditate", "auto_circulation"],
         "source": "system_fallback",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.08,
@@ -200,6 +246,7 @@
       "rest": {
         "action_type": "rest",
         "display_name": "Rest",
+        "action_tags": ["rest", "recovery"],
         "source": "explicit_or_system",
         "settlement_kind": "cultivation",
         "base_efficiency_ratio": 0.0,

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_label": "mvp-foundation",
+  "build_label": "mvp-p3-character-init",
   "default_world_seed": 424242,
   "time": {
     "hours_per_day": 24,
@@ -10,5 +10,55 @@
     "room_name": "Local Smoke Room",
     "advance_hours": 1,
     "post_load_f1_hours": 3
+  },
+  "character_init": {
+    "true_spirit": {
+      "spirit_id": "true_spirit_xuanwei",
+      "true_name": "Xuanwei",
+      "true_name_mode": "preset",
+      "story_line_id": "story_xuanwei_main",
+      "story_line_type": "dedicated",
+      "incarnation_count": 1,
+      "true_name_visibility": "hidden"
+    },
+    "current_life": {
+      "character_id": "char_xuanwei_first_life",
+      "character_name": "Xuanwei Vessel",
+      "gender": "unspecified",
+      "age": 16,
+      "lifespan_limit": 80,
+      "init_context": "first_entry",
+      "birth_region_id": "starter_valley",
+      "birth_location_id": "starter_cave_mouth",
+      "appearance_profile_id": "mvp_placeholder",
+      "initial_material_package_ids": [],
+      "has_secular_background_identity": false
+    },
+    "base_attributes": {
+      "base_physique": 10,
+      "base_vigor": 10
+    },
+    "aptitude_profile": {
+      "aptitude_bone": 10,
+      "aptitude_comprehension": 10,
+      "aptitude_root": 2,
+      "root_affinity_tags": ["wood"],
+      "aptitude_rating_visibility": "revealed"
+    },
+    "derived_bars": {
+      "bar_vitality_max": 100,
+      "bar_qi_max": 80,
+      "bar_mind_max": 60
+    },
+    "cultivation_state": {
+      "realm": "qi_refining",
+      "minor_stage": "qi_refining_1",
+      "current_realm_segment_id": "qi_refining_1",
+      "cultivation_points": 0,
+      "normalized_segment_progress": 0.0,
+      "bottleneck_state": "none",
+      "foundation_quality": 0.5,
+      "meridian_pressure": 0.0
+    }
   }
 }

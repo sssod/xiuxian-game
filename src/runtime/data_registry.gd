@@ -63,3 +63,10 @@ func get_smoke_post_load_f1_hours() -> int:
 	if hours < 1:
 		return 1
 	return hours
+
+
+func get_character_init_config() -> Dictionary:
+	var character_init = config.get("character_init", {})
+	if typeof(character_init) != TYPE_DICTIONARY:
+		return {}
+	return character_init.duplicate(true)

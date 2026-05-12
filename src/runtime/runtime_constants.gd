@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RuntimeConstants
 
-const APP_VERSION = "0.1.1-p2-save-loop"
+const APP_VERSION = "0.2.0-p3-character-init"
 const GODOT_VERSION_TARGET = "4.6.2.stable"
 const SAVE_SCHEMA_VERSION = 1
 const DEFAULT_WORLD_SEED = 424242

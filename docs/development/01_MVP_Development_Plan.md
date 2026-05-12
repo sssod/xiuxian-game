@@ -48,6 +48,13 @@ P2 initial implementation decisions recorded on 2026-05-12:
 2. Unsupported `save_version`, room mode, save lineage, or active room state returns a diagnostic load failure instead of mutating or downgrading the save.
 3. If a saved room is found in `settlement_in_progress`, the P2 runtime shell records a recovery event and restores the last committed `world_running` snapshot; richer pending-settlement replay is deferred until systems create multi-step settlements.
 4. F1 advancement in the smoke path uses repeated hour-tick settlement and result-package creation, not a direct time jump.
+5. Save-slot diagnostics are non-mutating and return explicit `can_continue`, status, code, world-time, mode, lineage, recovery, and metadata fields; the debug Continue control is enabled only for diagnosable, supported saves.
+
+P3 initial implementation decisions recorded on 2026-05-12:
+
+1. The first P3 slice initializes a config-backed preset true spirit and current-life character when a local single-player room is created.
+2. Initial character data includes identity, true-spirit fields, base attributes, aptitude profile, derived bars, lifespan state, and cultivation state; current values are MVP placeholder runtime config, not final balance authority.
+3. Initial character creation records a replay event and fixes `has_secular_background_identity=false` for the first-entry path.
 
 ## Target Outcome
 
@@ -70,8 +77,8 @@ The schedule starts on 2026-05-12 and assumes focused part-time-to-full-time dev
 | --- | --- | ---: | --- |
 | P0 Planning Reset | 2026-05-12 to 2026-05-15 | 4 days | Completed |
 | P1 Godot Foundation | 2026-05-16 to 2026-05-29 | 2 weeks | Completed |
-| P2 Single-Player Room, Time, Save | 2026-05-30 to 2026-06-12 | 2 weeks | In progress |
-| P3 Character, Realm, Command, Cultivation | 2026-06-13 to 2026-07-03 | 3 weeks | Not started |
+| P2 Single-Player Room, Time, Save | 2026-05-30 to 2026-06-12 | 2 weeks | Completed |
+| P3 Character, Realm, Command, Cultivation | 2026-06-13 to 2026-07-03 | 3 weeks | In progress |
 | P4 Map, Movement, Resources, Inventory | 2026-07-04 to 2026-07-17 | 2 weeks | Not started |
 | P5 Events, Combat, Breakthrough, Reincarnation | 2026-07-18 to 2026-08-07 | 3 weeks | Not started |
 | P6 Sect-Lite, UI Integration, Validation | 2026-08-08 to 2026-08-21 | 2 weeks | Not started |
@@ -86,13 +93,13 @@ Progress is tracked by runnable output, not by document completion.
 | --- | --- | ---: | --- | --- | --- |
 | Planning reset | Completed | 100% | MVP plan moved outside design package; first phase narrowed to single-player; P1 technical defaults recorded | Keep plan current as implementation advances | None |
 | Godot project foundation | Completed | 100% | Godot project skeleton, debug boot scene, JSON config, runtime shell, and headless smoke command added; smoke and headless main-scene launch verified with Godot 4.6.2 | Reopen only if editor-specific settings or export setup become necessary | None |
-| Runtime architecture | In progress | 55% | Runtime skeletons for room, world time, command queue, character state, settlement, result package, replay, data, save, logging, and UI adapter added; save/load recovery runner added | Add scenario-focused settlement APIs as P3/P4 systems arrive | None |
-| Single-player room/save | In progress | 35% | Local room creation, N1 hour advance, versioned save/load, load diagnostics, interrupted-settlement recovery marker, F1 repeated-tick smoke path, and debug UI save/continue controls added | Add broader load failure diagnostics and first save/load UI review pass | None |
-| Character/realm/cultivation | Not started | 0% | Design references identified | Implement true-spirit/current-life initialization and CP progression | Needs room/save skeleton |
+| Runtime architecture | In progress | 65% | Runtime skeletons for room, world time, command queue, character state, settlement, result package, replay, data, save, logging, and UI adapter added; save/load recovery runner, save-slot diagnostics, and first-entry character initialization added | Add scenario-focused settlement APIs as P3/P4 systems arrive | None |
+| Single-player room/save | Completed | 100% | Local room creation, N1 hour advance, versioned save/load, structured load diagnostics, non-mutating save-slot summary, interrupted-settlement recovery marker, F1 repeated-tick smoke path, and debug UI save/continue controls added | Reopen only if P3 state introduces new save fields or recovery boundaries | None |
+| Character/realm/cultivation | In progress | 15% | Config-backed true-spirit/current-life initialization added with identity, attributes, aptitude, derived bars, lifespan, initial cultivation state, replay event, save/load preservation, and debug UI summary | Add command templates and active-breathing CP tick settlement | Final balance values still need later config tables |
 | Map/movement/resources | Not started | 0% | Design references identified | Implement node graph, travel command, and minimal resource slot | Needs command settlement |
 | Events/combat/breakthrough | Not started | 0% | Design references identified | Implement deterministic event trigger and one B1 combat path | Needs character bars and command settlement |
-| UI integration | Not started | 0% | Low-fidelity UI direction accepted | Build title/debug/main/cultivation/command views | Needs runtime state APIs |
-| Validation/replay | In progress | 15% | Empty-room smoke plus save/load/F1 repeated-tick smoke now exercise result packages and replay entries | Add fixed-seed gameplay scenarios as P3/P5 systems arrive | Needs gameplay systems |
+| UI integration | In progress | 15% | Low-fidelity debug boot scene now exposes build/config, room/time, character summary, queue capacity, save-slot diagnostics, save/load results, result summary, and replay/result counts | Build cultivation and command management views as P3 state APIs arrive | Needs command/cultivation APIs |
+| Validation/replay | In progress | 30% | Empty-room smoke plus save/load/F1 repeated-tick smoke now exercise result packages, replay entries, character initialization preservation, interrupted-settlement recovery, and load failure diagnostic codes | Add fixed-seed gameplay scenarios as P3/P5 systems arrive | Needs command/cultivation systems |
 | Multiplayer | Deferred | 0% | Explicitly moved out of MVP-1 | Revisit after single-player MVP review | Out of current scope |
 
 ## Milestone Details

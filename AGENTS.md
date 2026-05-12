@@ -23,10 +23,29 @@ Current work mode is MVP development. Codex-side work should prioritize implemen
 Current focus:
 
 - Implement MVP slices against `docs/xiuxian_design_docs`.
-- Use the formal package to derive runtime, backend, frontend, data, test, and acceptance work.
+- Use the formal package to derive runtime, Godot client, data, test, tooling, and acceptance work.
 - Keep edits scoped to the MVP slice or user-requested task.
 - Record or surface design gaps, stale-vs-active ambiguity, and non-mechanical choices instead of deciding silently.
 - Treat historical documents as reference material only; accepted details must be restated in the formal package or directly authorized by the user before driving implementation.
+
+## Technical Stack Direction
+
+The project is a Godot game project. MVP development and final production should use Godot as the primary playable client and runtime target, rather than building a separate Web application as the main MVP.
+
+Target distribution is a desktop Steam release. Web browser distribution is not a product requirement, and technical choices should not be optimized around Godot Web export, browser compatibility, or Web-first deployment unless the user explicitly changes the target.
+
+MVP UI may be low fidelity and should prioritize playable workflows, debug visibility, validation speed, and implementation clarity over final visual polish, animation quality, or high-fidelity layout matching.
+
+Prefer a Godot-first architecture:
+
+- Keep core gameplay rules, room state, time progression, command queues, settlement, result packages, save/load, and replay/debug records in testable runtime modules.
+- Keep UI scenes thin; they should submit player intent, display authoritative state, and show result summaries rather than own settlement logic.
+- Use local developer tooling where it improves validation, such as command-line runners, debug scenes, structured logs, replay viewers, or numeric simulation scripts.
+- Do not introduce a Web frontend solely for MVP speed. Web or script-based tools may be used only as local developer utilities, such as viewing exported JSON logs or balance reports, when they do not become the authoritative runtime.
+
+Configuration and balance data should be data-driven. It is acceptable to edit configuration tables in local Excel workbooks during design and balancing, then export them into structured project formats such as CSV, JSON, TOML, or another Godot-friendly format chosen during implementation. The exported structured files, not the spreadsheet UI state, should be treated as runtime inputs.
+
+Godot version, scripting language, test framework, data format, build pipeline, and local tooling should be chosen by implementation best practice for a desktop Steam Godot game, with decisions recorded when they affect maintainability, testing, save compatibility, or production workflow.
 
 ## Source Precedence
 
@@ -53,6 +72,8 @@ Do not treat old `docs/index.md`, old `docs/CHANGELOG.md`, formerly canonical do
 ## Documentation Rules
 
 - Codex-side work should default to MVP implementation. Update docs only when the change clarifies MVP behavior, records an accepted decision, or surfaces an implementation-blocking gap.
+- New persisted implementation documents, technical notes, schemas, configuration comments, and code comments should prefer English. Existing Chinese design documents may remain Chinese when preserving established design terminology, but implementation-facing documentation should default to English unless the user asks otherwise.
+- The game must support at least Simplified Chinese and English. Formal design documents should remain primarily Chinese. For xiuxian-specific worldbuilding terms that do not yet have a good English localization, use a simple temporary translation first and keep the Chinese source meaning recoverable for later localization review.
 - For package structure, templates, terminology, package-internal references, leading-section style, stale-content handling, and historical-material handling, follow `docs/xiuxian_design_docs/00_INDEX/文档模板与包内引用规范.md`.
 - For ChatGPT Web Library upload/download round-trips, follow `docs/xiuxian_design_docs/00_INDEX/ChatGPT_Library同步与扁平导入导出规范.md`.
 - Keep `docs/xiuxian_design_docs` self-contained. Package-external materials are references only; adopted details must be restated in the formal package or directly authorized by the user.

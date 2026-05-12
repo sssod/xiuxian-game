@@ -30,6 +30,12 @@ Formal package:
 docs/xiuxian_design_docs/
 ```
 
+Development plan:
+
+```text
+docs/development/01_MVP_Development_Plan.md
+```
+
 ChatGPT Library flat export:
 
 ```bash

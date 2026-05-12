@@ -31,6 +31,17 @@ MVP-1 excludes:
 
 Multiplayer remains a later phase. MVP-1 should still keep deterministic settlement, replay records, save boundaries, and authority separation clean enough that a later multiplayer layer can be added without rewriting core gameplay rules.
 
+## Technical Decisions
+
+P1 foundation decisions recorded on 2026-05-12:
+
+1. Godot target: Godot `4.6.2.stable` for the MVP foundation. Commit `project.godot`; defer export presets until desktop build/export work starts.
+2. Runtime/UI language: GDScript for MVP runtime modules and UI scenes. C# is not part of MVP-1 unless explicitly approved later.
+3. Test runner: custom headless Godot smoke runner first, invoked by `sh scripts/run_godot_smoke.sh` and implemented in `tools/smoke_runner.gd`. Add GUT only if the native runner becomes too weak for later scenario coverage.
+4. Config format: JSON files under `data/` for early structured config. CSV remains acceptable for exported tabular balance data once balancing work starts, but runtime inputs must be committed structured files.
+5. Save format: versioned JSON local save files for the P2 implementation path, with `save_version` checks and explicit migration handling before incompatible saves are loaded.
+6. Localization: defer key table implementation until UI text starts stabilizing; MVP must still reach Simplified Chinese and English coverage by P7.
+
 ## Target Outcome
 
 MVP-1 is complete when a local player can:
@@ -66,9 +77,9 @@ Progress is tracked by runnable output, not by document completion.
 
 | Track | Status | Progress | Done | Next Action | Blocking Issues |
 | --- | --- | ---: | --- | --- | --- |
-| Planning reset | In progress | 40% | MVP plan moved outside design package; first phase narrowed to single-player | Confirm Godot version, scripting language, test runner, and config format | Technical decisions not recorded yet |
-| Godot project foundation | Not started | 0% | No Godot project exists in the repo | Create project skeleton and debug boot scene | Need engine/version decision |
-| Runtime architecture | Not started | 0% | Target runtime modules identified | Implement room/time/result package smoke runner | Needs project foundation |
+| Planning reset | In progress | 80% | MVP plan moved outside design package; first phase narrowed to single-player; P1 technical defaults recorded | Review first foundation slice after local Godot verification | None |
+| Godot project foundation | In progress | 55% | Godot project skeleton, debug boot scene, JSON config, and headless smoke command added; smoke and headless main-scene launch verified with Godot 4.6.2 | Launch project in the editor and verify debug boot scene visually | None |
+| Runtime architecture | In progress | 40% | Runtime skeletons for room, world time, command queue, character state, settlement, result package, replay, data, save, logging, and UI adapter added; one-hour smoke result verified | Expand smoke runner into save/load recovery runner for P2 | None |
 | Single-player room/save | Not started | 0% | Design references identified | Implement local room creation, save, load, recovery | Needs runtime skeleton |
 | Character/realm/cultivation | Not started | 0% | Design references identified | Implement true-spirit/current-life initialization and CP progression | Needs room/save skeleton |
 | Map/movement/resources | Not started | 0% | Design references identified | Implement node graph, travel command, and minimal resource slot | Needs command settlement |
@@ -325,11 +336,11 @@ Review outputs:
 
 | Gate | Needed By | Current Plan | Decision Needed |
 | --- | --- | --- | --- |
-| Godot version | P1 start | Use Godot 4 stable line | Exact version and whether to commit editor/export settings |
-| Scripting language | P1 start | Prefer GDScript for runtime and UI | Whether C# is allowed for runtime modules |
-| Test runner | P1 start | Headless runner required | GUT, native Godot test pattern, or custom runner |
-| Config format | P1/P2 | Structured text files | JSON, CSV, TOML, Godot Resource, or mixed approach |
-| Save format | P2 | Versioned local save file | JSON/resource/binary and migration policy |
+| Godot version | P1 start | Godot `4.6.2.stable`; commit `project.godot`; defer export presets | Verify editor launch and decide whether to commit editor-specific settings after first visual pass |
+| Scripting language | P1 start | GDScript for MVP runtime and UI; no C# in MVP-1 by default | Reopen only if a later production constraint requires C# |
+| Test runner | P1 start | Custom headless Godot runner in `tools/smoke_runner.gd` | Reassess GUT after fixed-seed scenario count grows |
+| Config format | P1/P2 | JSON under `data/` for early config; CSV allowed for exported tabular balance later | Define schema validation rules in P2/P3 |
+| Save format | P2 | Versioned JSON local save with `save_version` checks | Define migration policy and recovery states in P2 |
 | Localization | P3/P7 | zh-CN and en keys from MVP | Key naming and fallback behavior |
 | Realm sample data | P3 | Minimal Qi Refining through early breakthrough chain | Exact segment thresholds and target hours |
 | Combat formula | P5 | Minimal counter model | Whether to use deterministic threshold, light randomization, or template-only resolution |
@@ -373,3 +384,4 @@ These items are intentionally outside MVP-1:
 | --- | --- |
 | 2026-05-12 | Created the MVP development plan outside the formal design package. |
 | 2026-05-12 | Revised the plan to be English-first, execution-oriented, schedule-based, progress-tracked, and single-player-only for MVP-1. |
+| 2026-05-12 | Recorded P1 technical decisions and started Godot foundation implementation with a debug boot scene and headless smoke runner. |

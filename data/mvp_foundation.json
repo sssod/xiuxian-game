@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "build_label": "mvp-foundation",
+  "default_world_seed": 424242,
+  "time": {
+    "hours_per_day": 24,
+    "normal_speed_code": "N1"
+  },
+  "smoke": {
+    "room_name": "Local Smoke Room",
+    "advance_hours": 1
+  }
+}

@@ -12,14 +12,23 @@ Current work mode is MVP development against the formal design document package 
 
 - Project slug: `xiuxian-game`
 - Project type: `application`
-- Stack archetype: `docs-only`
-- Runtime: `markdown` `docs-only`
+- Stack archetype: `godot`
+- Runtime: `Godot 4.6.2 stable target` `GDScript`
 - Package manager: `none`
 
 ## Quick Start
 
 ```bash
-ls docs/xiuxian_design_docs
+sh scripts/run_godot_smoke.sh
+```
+
+The smoke runner expects a Godot 4 binary on `PATH` as `godot4` or `godot`.
+You can also set `GODOT_BIN=/absolute/path/to/godot`.
+
+Launch the debug boot scene from Godot by opening this project root. The main scene is:
+
+```text
+res://scenes/debug_boot.tscn
 ```
 
 ## Design Docs

@@ -8,6 +8,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# Godot generated files
+.godot/
+.import/
+export.cfg
+
 # Local notes and temporary exports
 *.tmp
 *.temp

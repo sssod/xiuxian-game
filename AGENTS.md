@@ -41,6 +41,8 @@ Prefer a Godot-first architecture:
 - Keep core gameplay rules, room state, time progression, command queues, settlement, result packages, save/load, and replay/debug records in testable runtime modules.
 - Keep UI scenes thin; they should submit player intent, display authoritative state, and show result summaries rather than own settlement logic.
 - Use local developer tooling where it improves validation, such as command-line runners, debug scenes, structured logs, replay viewers, or numeric simulation scripts.
+- Local Godot environment checked on 2026-05-12: `/Applications/Godot.app/Contents/MacOS/Godot`, version `4.6.2.stable.official.71f334935`. `scripts/run_godot_smoke.sh` should prefer `GODOT_BIN`, then `godot4`, then `godot`, then this macOS app-bundle path.
+- Godot may crash inside the Codex filesystem sandbox when it cannot write its normal `user://logs` files. If a Godot smoke or headless run fails with `user://logs` write errors under sandboxing, rerun the project smoke command outside the sandbox with `sh scripts/run_godot_smoke.sh`; this is the normal local verification path.
 - Do not introduce a Web frontend solely for MVP speed. Web or script-based tools may be used only as local developer utilities, such as viewing exported JSON logs or balance reports, when they do not become the authoritative runtime.
 
 Configuration and balance data should be data-driven. It is acceptable to edit configuration tables in local Excel workbooks during design and balancing, then export them into structured project formats such as CSV, JSON, TOML, or another Godot-friendly format chosen during implementation. The exported structured files, not the spreadsheet UI state, should be treated as runtime inputs.

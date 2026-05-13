@@ -44,15 +44,3 @@ Development plan:
 ```text
 docs/development/01_MVP_Development_Plan.md
 ```
-
-ChatGPT Library flat export:
-
-```bash
-python3 scripts/sync_design_docs_chatgpt.py export --clean
-```
-
-Preview Web-edited docs before writing them back:
-
-```bash
-python3 scripts/sync_design_docs_chatgpt.py plan-import --input <下载目录>
-```

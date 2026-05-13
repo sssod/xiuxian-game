@@ -10,7 +10,7 @@ This file applies to the `xiuxian-game` project root. Do not use files outside t
 
 ## Current Status
 
-Checked on 2026-05-12.
+Checked on 2026-05-13.
 
 The current formal design document package is:
 
@@ -80,7 +80,6 @@ Do not treat old `docs/index.md`, old `docs/CHANGELOG.md`, formerly canonical do
 - New persisted implementation documents, technical notes, schemas, configuration comments, and code comments should prefer English. Existing Chinese design documents may remain Chinese when preserving established design terminology, but implementation-facing documentation should default to English unless the user asks otherwise.
 - The game must support at least Simplified Chinese and English. Formal design documents should remain primarily Chinese. For xiuxian-specific worldbuilding terms that do not yet have a good English localization, use a simple temporary translation first and keep the Chinese source meaning recoverable for later localization review.
 - For package structure, templates, terminology, package-internal references, leading-section style, stale-content handling, and historical-material handling, follow `docs/xiuxian_design_docs/00_INDEX/文档模板与包内引用规范.md`.
-- For ChatGPT Web Library upload/download round-trips, follow `docs/xiuxian_design_docs/00_INDEX/ChatGPT_Library同步与扁平导入导出规范.md`.
 - Keep `docs/xiuxian_design_docs` self-contained. Package-external materials are references only; adopted details must be restated in the formal package or directly authorized by the user.
 - Mark unresolved conflicts, stale-vs-active ambiguity, and non-mechanical design choices for user judgment instead of deciding silently.
 - Do not update historical reference documents in `docs/inbox` unless the user explicitly asks for archive maintenance.

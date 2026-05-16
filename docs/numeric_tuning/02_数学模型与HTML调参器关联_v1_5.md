@@ -4,11 +4,22 @@
 
 本文对应的 HTML 调参器为 `修为时间数学模型_html调参器_v_0_1.html`。HTML 是本轮建模校验工具，不是正式运行时或正式设计权威。
 
+本文位于 `docs/numeric_tuning`，属于开发调参与验算资产。正式数值设计权威仍位于 `docs/xiuxian_design_docs/03_数值设计`；调参器输出若要驱动实现，必须先把稳定结论改写进对应正式数值文档。
+
 ## 1. 当前定位
 
 本文负责把 v1.5 数值方案中的输入变量、目标期望值、推导变量、约束项和 HTML 调参器字段集中定义。
 
-标准数值口径见《修为时间、F1 与洞天局部时间标准数值方案 v1.5》（`01_标准数值方案_v1_5.md`）；正式包各系统需要承接的修改裁定见《跨系统数值修改裁定 v1.5》（`03_跨系统数值修改裁定_v1_5.md`）。
+正式数值口径以以下文档为准：
+
+| 正式文档 | 关系 |
+| --- | --- |
+| `../xiuxian_design_docs/03_数值设计/10_时间速度与局部时间域数值设计.md` | 时间速度、F1、现实时间基线、外界年基线、局部时间域和资源年权威口径 |
+| `../xiuxian_design_docs/03_数值设计/01_修为境界与期望游玩时间建模.md` | 境界段、玩家现实体验目标、CP 上下界和阶段倍率参考 |
+| `../xiuxian_design_docs/03_数值设计/02_修炼公式与数值设计.md` | 正式修炼收益、资源输入、兼容小时和状态压力公式 |
+| `../xiuxian_design_docs/03_数值设计/08_数值验算.md` | 验算场景、Debug 输出和调参验收边界 |
+
+历史输入来源仍可参考 `../inbox/design_changed_input/01_标准数值方案_v1_5.md` 与 `../inbox/design_changed_input/03_跨系统数值修改裁定_v1_5.md`，但它们不越过正式包成为当前设计权威。
 
 ## 2. 分类定义
 
@@ -16,7 +27,7 @@
 | --- | --- | --- | --- | --- |
 | 外部强约束 | `H` | 来自当前裁决、正式系统口径或跨系统一致性要求；本方案只能服从，不能在内部调参时改写 | 不可在本文内任意修改 | 速度状态只保留 N1 / F1 / B1 / P0；阶段预算按外界时间刷新 |
 | 可调输入变量 | `X` | 设计者可以直接调整的模型输入，用于反推体验节奏、时间分配、资源消耗和事件密度 | 可调 | `f1_seconds_per_outer_day`、`local_domain_growth_ratio`、`method_study_ratio` |
-| 模型输出的可调期望值 | `T` | 用于校准模型的目标值或验收区间；不是单次运行的结算结果 | 可调，但应通过版本裁决修改 | 32 小时现实参考、45-48 外界年、596 局部主观年 |
+| 模型输出的可调期望值 | `T` | 用于校准模型的目标值或验收区间；不是单次运行的结算结果 | 可调，但应通过版本裁决修改 | 32 小时现实参考、约 47.55 外界年、596 局部主观年、50 小时 / 100 年 Debug 边界 |
 | 因变量 / 推导变量 | `Y` | 由 `H`、`X`、`T` 与运行时状态经公式推导得到；通常不应被手动直接填写 | 不直接调，随输入变化 | `F1_outer_years`、`local_dao_cultivation_years`、`unsupported_inner_years` |
 | 方案内生约束 | `C` | 本方案为了数学一致性设定的等式、不等式、优先级和守恒关系 | 原则上不可破坏；可在新版本中整体重构 | `N1_ratio + F1_ratio + B1_ratio = 1` |
 
@@ -53,11 +64,11 @@
 
 | 变量 | 默认值 | 单位 | 含义 | HTML 控件 |
 | --- | ---: | --- | --- | --- |
-| `N1_real_ratio` | 0.66 | 比例 | 32 小时中分配给 N1 现场交互的现实时间占比 | `N1 现实占比` |
-| `F1_real_ratio` | 0.22 | 比例 | 32 小时中分配给 F1 长期低交互推进的现实时间占比 | `F1 现实占比` |
-| `B1_real_ratio` | 0.12 | 比例 | 32 小时中分配给 B1 关键慢速轮的现实时间占比 | `B1 现实占比` |
+| `N1_real_ratio` | 0.66 | 比例 | 现实参考时长中分配给 N1 现场交互的现实时间占比 | `N1 现实占比` |
+| `F1_real_ratio` | 0.22 | 比例 | 现实参考时长中分配给 F1 长期低交互推进的现实时间占比 | `F1 现实占比` |
+| `B1_real_ratio` | 0.12 | 比例 | 现实参考时长中分配给 B1 关键慢速轮的现实时间占比 | `B1 现实占比` |
 | `n1_seconds_per_outer_hour` | 15 | 秒 / 外界小时 | N1 现场状态的外界时间推进速度 | `N1 秒 / 外界小时` |
-| `f1_seconds_per_outer_day` | 1.5 | 秒 / 外界日 | F1 长期低交互状态的外界时间推进速度 | `F1 秒 / 外界日` |
+| `f1_seconds_per_outer_day` | 1.5 | 秒 / 外界日 | F1 长期低交互状态的外界时间推进速度；HTML 调参范围为 1-2 秒 / 外界日 | `F1 秒 / 外界日` |
 | `b1_seconds_per_outer_hour` | 60 | 秒 / 外界小时 | B1 慢速交锋状态的外界时间推进速度 | `B1 秒 / 外界小时` |
 
 内生约束：
@@ -131,9 +142,9 @@ HTML 中 `lockLocalRatio` 和 `lockMethodRatio` 分别保持成长 / 支持、�
 
 | 目标值 | 当前口径 | 验收 / 说明 | HTML 字段 |
 | --- | --- | --- | --- |
-| `target_real_reference_hours` | 32 小时 | 理论直线现实参考时长，不等于实际单局总时长 | `target_real_reference_hours` |
-| `target_outer_world_years` | 约 47.55 年 | HTML 中作为“反推 F1 速度”的目标值；设计文本口径为约 45-48 年 | `target_outer_world_years` |
-| `outer_world_year_acceptance_range` | 20-50 年 | 验收范围；当前倾向接近上限但不超过 50 年 | `outer_world_year_min` / `outer_world_year_max` |
+| `target_real_reference_hours` | 默认 32 小时，Debug 最高 50 小时 | 理论直线现实参考时长，不等于实际单局总时长 | `target_real_reference_hours` |
+| `target_outer_world_years` | 默认约 47.55 年，Debug 最高 100 年 | HTML 中作为“反推 F1 速度”的目标值；当前约 47.55 年基线已接受 | `target_outer_world_years` |
+| `outer_world_year_acceptance_range` | 常规 20-50 年，可 Debug 到 100 年 | 常规验收范围仍以 20-50 年为主；100 年只作为调试极限 | `outer_world_year_min` / `outer_world_year_max` / `outer_world_year_debug_limit` |
 | `target_local_domain_inner_years` | 约 596 年 | 局部时间域主观经历目标，不等同完整生涯总年数 | `local_domain_inner_years` |
 | `target_local_growth_years` | 约 417 年 | 596 年 x 70%，用于修行成长 | 推导输出 |
 | `target_local_method_study_years` | 约 83 年 | 417 年 x 20%，用于功法研习 | 推导输出 |
@@ -145,7 +156,8 @@ HTML 中 `lockLocalRatio` 和 `lockMethodRatio` 分别保持成长 / 支持、�
 
 ```text
 若 total_outer_years < 20：外界流年感不足，应提高 F1 占比或加快 F1；
-若 total_outer_years > 50：理论直线路径过长，应降低 F1 占比或放慢外界年目标；
+若 total_outer_years > outer_world_year_max 且 <= outer_world_year_debug_limit：超过常规验收上限，只能作为 Debug 样例；
+若 total_outer_years > outer_world_year_debug_limit：超过 100 年调试极限，应降低 F1 占比或放慢外界年目标；
 若 local_dao_cultivation_years 不足：修为推进年不够，应提高局部主观年或道功修炼比例；
 若 local_support_years 不足：闭关风险、恢复、巩固和事件空间不足，应提高支持行为比例或减少连续高压修炼。
 ```
@@ -483,7 +495,7 @@ Step 1：确认 H
   固定终点、速度状态、寿元口径、阶段预算口径、F1 事件口径。
 
 Step 2：设定 T
-  确认 32 小时现实参考、45-48 外界年、596 局部主观年等版本目标。
+  确认默认 32 小时现实参考、当前约 47.55 外界年、596 局部主观年，以及 50 小时 / 100 年 Debug 边界。
 
 Step 3：选择 X_time
   调整 N1 / F1 / B1 现实占比与速度常量，得到 total_outer_world_years。
@@ -520,7 +532,7 @@ Step 7：检查 C
 HTML 文件：
 
 ```text
-docs/inbox/design_changed_input/修为时间数学模型_html调参器_v_0_1.html
+docs/numeric_tuning/修为时间数学模型_html调参器_v_0_1.html
 ```
 
 调参器功能：
@@ -543,16 +555,19 @@ docs/inbox/design_changed_input/修为时间数学模型_html调参器_v_0_1.htm
 | `导出参数 JSON` | 导出当前 state |
 | `导入参数 JSON` | 从 JSON 合并参数到默认字段集合 |
 | `恢复 v1.5 基线` | 恢复 `defaults` |
-| `保守外界 40 年` | 设置 `f1_seconds_per_outer_day = 1.8`，`target_outer_world_years = 40` |
-| `快速调试 30 年` | 设置 `f1_seconds_per_outer_day = 2.4`，`target_outer_world_years = 30` |
+| `F1 1 秒快档` | 设置 `f1_seconds_per_outer_day = 1`，用于观察更长外界流年压力 |
+| `F1 2 秒慢档` | 设置 `f1_seconds_per_outer_day = 2`，用于观察更短外界流年压力 |
+| `50h / 100 年调试` | 设置 `target_real_reference_hours = 50`、`target_outer_world_years = 100`、`outer_world_year_max = 100`，用于压力测试 |
 | `高压洞天样例` | 提高局部主观年、心魔 / 经脉压力、洞天倍率并降低资源不足收益 |
 
 ## 10. HTML 与文档对齐事项
 
 | 项目 | 当前状态 | 后续处理建议 |
 | --- | --- | --- |
-| F1 速度 | HTML 默认 1.5 秒 / 外界日，符合 v1.5 基线 | 若正式包采用，应同步替换旧 2 秒 / 外界日口径 |
-| 外界年目标 | HTML 默认 `target_outer_world_years = 47.55`；文本口径为约 45-48 年 | 正式包可写约 45-48 年，调参器保留 47.55 作为基线点 |
+| F1 速度 | HTML 默认 1.5 秒 / 外界日，调参范围 1-2 秒 / 外界日 | 正式包已采用默认 1.5 秒，并保留 1 / 1.5 / 2 秒调参档 |
+| 现实参考时长 | HTML 默认 `target_real_reference_hours = 32`，上限 50 小时 | 正式包默认 32 小时；50 小时只作为 Debug 上限 |
+| 外界年目标 | HTML 默认 `target_outer_world_years = 47.55`，可 Debug 到 100 年 | 正式包接受当前约 47.55 年基线，不改为 30-40 年保守口径；100 年只作为调试极限 |
+| 外界年验收上限 | HTML 默认 `outer_world_year_max = 50`，`outer_world_year_debug_limit = 100` | 超过 50 年属于 Debug 样例；超过 100 年应判定为越界 |
 | 资源年承载倍率 | HTML 在有效修炼年公式中使用 `resource_supported_inner_years * resource_year_capacity_multiplier` | 文档公式应明确 `resource_cap`，避免只写 `resource_supported_inner_years` 造成漏乘 |
 | 寿元压力倍率 | HTML 仅展示 `lifespan_pressure_modifier`，不直接改写 `lifespan_safe_years` | 后续若要模拟寿元压力，应补派生公式 |
 | `base_cultivation_yield` | HTML 仅用于估算收益上限 CP | 不应写入正式修炼公式作为权威收益单位 |
@@ -564,12 +579,16 @@ docs/inbox/design_changed_input/修为时间数学模型_html调参器_v_0_1.htm
 
 | 文档 | 关系 |
 | --- | --- |
-| `01_标准数值方案_v1_5.md` | 承接标准数值口径，并把其中的默认值转换为变量、公式和校验 |
-| `03_跨系统数值修改裁定_v1_5.md` | 被承接；跨系统裁定读取本文公式、字段和 HTML 对齐事项 |
+| `../xiuxian_design_docs/03_数值设计/10_时间速度与局部时间域数值设计.md` | 正式权威；提供默认 32 小时、F1 默认 1.5 秒、47.55 外界年、50 小时 / 100 年 Debug 边界 |
+| `../xiuxian_design_docs/03_数值设计/01_修为境界与期望游玩时间建模.md` | 正式权威；提供境界段、现实体验目标和阶段倍率参考 |
+| `../xiuxian_design_docs/03_数值设计/02_修炼公式与数值设计.md` | 正式权威；正式修炼收益公式仍由该文档维护 |
+| `../xiuxian_design_docs/03_数值设计/08_数值验算.md` | 正式权威；提供验算场景和 Debug 输出边界 |
 | `修为时间数学模型_html调参器_v_0_1.html` | 工具关联；用于快速验算本文变量和公式，但不是正式设计权威 |
-| `../../xiuxian_design_docs/03_数值设计/01_修为境界与期望游玩时间建模.md` | 基础来源；提供正式包现行境界、速度和期望时间口径 |
-| `../../xiuxian_design_docs/03_数值设计/02_修炼公式与数值设计.md` | 基础来源；正式修炼收益公式仍由该文档维护 |
+| `../inbox/design_changed_input/01_标准数值方案_v1_5.md` | 历史输入；不越过正式包成为当前权威 |
+| `../inbox/design_changed_input/03_跨系统数值修改裁定_v1_5.md` | 历史输入；不越过正式包成为当前权威 |
 
 ## 12. 维护记录
 
 2026-05-15：从原始 v1.5 草稿拆分出数学模型与 HTML 调参器关联稿，补齐 HTML 字段映射、推导公式、约束校验和对齐事项。
+
+2026-05-16：迁移到 `docs/numeric_tuning`，明确调参器只是开发验算工具；同步用户裁决，将现实参考时长调试上限限制为 50 小时、外界年 Debug 极限限制为 100 年，并接受当前约 47.55 外界年基线。

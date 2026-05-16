@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>修为时间数学模型调参器 v0.1</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #172033;
+      --card: #1f2937;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --soft: #cbd5e1;
+      --line: rgba(148, 163, 184, 0.24);
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --info: #38bdf8;
+      --accent: #a78bfa;
+      --accent-2: #60a5fa;
+      --shadow: 0 20px 60px rgba(0,0,0,.28);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,.18), transparent 34rem),
+        radial-gradient(circle at top right, rgba(167,139,250,.15), transparent 30rem),
+        var(--bg);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: rgba(15, 23, 42, .84);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .header-inner {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      max-width: 980px;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    button, .button-like {
+      border: 1px solid var(--line);
+      background: rgba(31, 41, 55, .78);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    button:hover, .button-like:hover {
+      transform: translateY(-1px);
+      border-color: rgba(167,139,250,.75);
+      background: rgba(51, 65, 85, .92);
+    }
+
+    button.primary {
+      border-color: rgba(96,165,250,.65);
+      background: linear-gradient(135deg, rgba(96,165,250,.28), rgba(167,139,250,.25));
+    }
+
+    input[type="file"] { display: none; }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 22px;
+      display: grid;
+      grid-template-columns: minmax(360px, 520px) 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .header-inner { grid-template-columns: 1fr; }
+      .toolbar { justify-content: flex-start; }
+      main { grid-template-columns: 1fr; }
+      .result-panel { position: static !important; }
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(17, 24, 39, .78);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15, 23, 42, .38);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .panel-head h2, .panel-head h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-head p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .controls-column {
+      display: grid;
+      gap: 14px;
+    }
+
+    details.control-group {
+      border: 1px solid var(--line);
+      background: rgba(17, 24, 39, .72);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    details.control-group[open] summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 15px 16px;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    .summary-title {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .summary-desc {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      max-width: 360px;
+    }
+
+    .chevron {
+      color: var(--muted);
+      transition: transform .16s ease;
+    }
+
+    details[open] .chevron { transform: rotate(90deg); }
+
+    .control-body {
+      padding: 14px 16px 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .control {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(31, 41, 55, .58);
+      border: 1px solid rgba(148, 163, 184, .16);
+      border-radius: 14px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .control-label strong {
+      font-size: 13px;
+    }
+
+    .control-label code {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin: -2px 0 0;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 100px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-2);
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, .28);
+      background: rgba(15, 23, 42, .75);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 9px;
+      font: 700 13px var(--mono);
+      outline: none;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: rgba(96, 165, 250, .76);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.14);
+    }
+
+    .unit-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-family: var(--mono);
+      margin-left: 4px;
+    }
+
+    .switch-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, .16);
+      background: rgba(31, 41, 55, .45);
+      border-radius: 14px;
+    }
+
+    label.switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .48);
+      border: 1px solid rgba(148, 163, 184, .14);
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .preset-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 10px 0 0;
+    }
+
+    .result-panel {
+      position: sticky;
+      top: 106px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 780px) {
+      .dashboard { grid-template-columns: 1fr; }
+      .presets { grid-template-columns: 1fr; }
+      .input-row { grid-template-columns: 1fr; }
+    }
+
+    .metric {
+      padding: 15px;
+      background: linear-gradient(180deg, rgba(31,41,55,.82), rgba(31,41,55,.55));
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 16px;
+      min-height: 122px;
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .metric .value {
+      font: 850 clamp(22px, 3vw, 32px)/1 var(--mono);
+      letter-spacing: -0.04em;
+    }
+
+    .metric .note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+    }
+
+    .badge.good { color: var(--good); background: rgba(34,197,94,.09); }
+    .badge.warn { color: var(--warn); background: rgba(245,158,11,.10); }
+    .badge.bad { color: var(--bad); background: rgba(239,68,68,.10); }
+    .badge.info { color: var(--info); background: rgba(56,189,248,.10); }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .section-grid { grid-template-columns: 1fr; }
+    }
+
+    .result-card {
+      border: 1px solid var(--line);
+      background: rgba(17, 24, 39, .78);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .result-card h3 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15, 23, 42, .42);
+    }
+
+    .result-card .content {
+      padding: 15px 16px;
+    }
+
+    .bar-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bar-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--soft);
+      font-size: 12px;
+    }
+
+    .bar-track {
+      height: 12px;
+      background: rgba(15,23,42,.75);
+      border: 1px solid rgba(148,163,184,.15);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      min-width: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    }
+
+    .bar-fill.good { background: linear-gradient(90deg, #22c55e, #86efac); }
+    .bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .bar-fill.bad { background: linear-gradient(90deg, #ef4444, #fb7185); }
+    .bar-fill.info { background: linear-gradient(90deg, #38bdf8, #93c5fd); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 9px 8px;
+      border-bottom: 1px solid rgba(148,163,184,.15);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 800;
+      background: rgba(15,23,42,.38);
+    }
+
+    td code {
+      color: var(--soft);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .checks {
+      display: grid;
+      gap: 8px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 10px 11px;
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,.15);
+      background: rgba(31,41,55,.54);
+      font-size: 12px;
+    }
+
+    .check strong { font-family: var(--mono); }
+    .check.good { border-color: rgba(34,197,94,.28); }
+    .check.warn { border-color: rgba(245,158,11,.34); }
+    .check.bad { border-color: rgba(239,68,68,.34); }
+    .check.info { border-color: rgba(56,189,248,.34); }
+
+    .summary-box {
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding: 14px;
+      border: 1px solid rgba(148,163,184,.16);
+      border-radius: 14px;
+      background: rgba(15,23,42,.62);
+      color: var(--soft);
+      font: 12px/1.6 var(--mono);
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    .small-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      background: rgba(15,23,42,.94);
+      border: 1px solid rgba(96,165,250,.48);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .footnote {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 2px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <h1>修为时间数学模型调参器</h1>
+        <div class="subtitle">基于 v1.5 草案的变量总表制作：先调 <strong>X 输入变量</strong>，实时观察 <strong>Y 推导变量</strong>、<strong>T 目标期望</strong>与 <strong>C 内生约束</strong>。设计年按 360 外界日计算，符合当前文档公式。</div>
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="solveF1">按目标外界年反推 F1 速度</button>
+        <button id="copySummary">复制摘要</button>
+        <button id="exportJson">导出参数 JSON</button>
+        <label class="button-like" for="importJson">导入 JSON</label>
+        <input id="importJson" type="file" accept="application/json" />
+        <button id="resetDefaults">恢复 v1.5 基线</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="controls-column">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>快捷预设</h2>
+            <p>用于快速比较外界流年目标、F1 速度和洞天压力。</p>
+          </div>
+        </div>
+        <div class="control-body">
+          <div class="presets">
+            <button data-preset="baseline">v1.5 基线</button>
+            <button data-preset="outer40">保守外界 40 年</button>
+            <button data-preset="outer30">快速调试 30 年</button>
+            <button data-preset="highPressure">高洞天压力</button>
+          </div>
+          <p class="preset-note">预设只改关键变量；仍可继续手动微调。</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>联动选项</h2>
+            <p>建议保持开启，避免比例组破坏守恒关系。</p>
+          </div>
+        </div>
+        <div class="control-body">
+          <div class="switch-row">
+            <label class="switch"><input id="lockTimeRatio" type="checkbox" checked /> 锁定 N1/F1/B1 总和 = 100%</label>
+            <label class="switch"><input id="lockLocalRatio" type="checkbox" checked /> 锁定成长/支持 = 100%</label>
+            <label class="switch"><input id="lockMethodRatio" type="checkbox" checked /> 锁定研习/道功 = 100%</label>
+          </div>
+        </div>
+      </section>
+
+      <div id="controls"></div>
+    </aside>
+
+    <section class="result-panel">
+      <div class="dashboard" id="dashboard"></div>
+
+      <div class="section-grid">
+        <section class="result-card">
+          <h3>时间分配与外界流年</h3>
+          <div class="content" id="timeBars"></div>
+        </section>
+
+        <section class="result-card">
+          <h3>局部时间域与修行成长</h3>
+          <div class="content" id="domainBars"></div>
+        </section>
+
+        <section class="result-card">
+          <h3>资源年瓶颈检查</h3>
+          <div class="content" id="resourceBars"></div>
+        </section>
+
+        <section class="result-card">
+          <h3>F1 事件与批量风险</h3>
+          <div class="content" id="eventTable"></div>
+        </section>
+      </div>
+
+      <section class="result-card">
+        <h3>内生约束与目标验收</h3>
+        <div class="content">
+          <div class="checks" id="checks"></div>
+        </div>
+      </section>
+
+      <section class="result-card">
+        <h3>关键推导表</h3>
+        <div class="content" id="derivedTable"></div>
+      </section>
+
+      <section class="result-card">
+        <h3>可复制调参摘要</h3>
+        <div class="content">
+          <div class="small-actions">
+            <button id="copySummary2">复制摘要</button>
+          </div>
+          <div class="summary-box" id="summaryText"></div>
+        </div>
+      </section>
+
+      <p class="footnote">说明：本页是设计调参工具，不是运行时结算器；它用于验证数学口径、目标区间和参数敏感性。</p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">已复制</div>
+
+  <script>
+    const DAYS_PER_YEAR = 360;
+    const HOURS_PER_DAY = 24;
+
+    const defaults = {
+      target_real_reference_hours: 32,
+      target_outer_world_years: 47.55,
+      outer_world_year_min: 20,
+      outer_world_year_max: 50,
+      local_domain_inner_years: 596,
+
+      N1_real_ratio: 0.66,
+      F1_real_ratio: 0.22,
+      B1_real_ratio: 0.12,
+      n1_seconds_per_outer_hour: 15,
+      f1_seconds_per_outer_day: 1.5,
+      b1_seconds_per_outer_hour: 60,
+
+      local_domain_growth_ratio: 0.70,
+      local_domain_support_ratio: 0.30,
+      method_study_ratio: 0.20,
+      dao_cultivation_ratio: 0.80,
+      outer_f1_ordinary_cultivation_ratio: 0.15,
+
+      inner_years_per_outer_day: 2,
+      max_inner_years_per_entry: 80,
+      resource_year_capacity_multiplier: 1,
+      lifespan_pressure_modifier: 1,
+      mental_risk_per_inner_year: 0.015,
+      meridian_pressure_per_inner_year: 0.018,
+      fuel_cost_per_inner_year: 1,
+      maintenance_cost_per_outer_day: 3,
+
+      planned_inner_years: 596,
+      resource_supported_inner_years: 420,
+      method_supported_inner_years: 596,
+      lifespan_safe_years: 700,
+      mental_stability_supported_years: 520,
+      unsupported_yield_ratio: 0.10,
+      base_cultivation_yield: 1,
+
+      max_f1_batch_horizon_early: 3,
+      max_f1_batch_horizon_mid: 15,
+      max_f1_batch_horizon_late: 90,
+      base_rate_per_outer_day: 0.02,
+      base_rate_per_inner_year: 0.01,
+      max_triggers_per_batch: 2
+    };
+
+    let state = loadState();
+
+    const groups = [
+      {
+        title: 'T｜模型输出的可调期望值',
+        desc: '版本级目标与验收范围。通常先定目标，再调输入变量。',
+        open: true,
+        controls: [
+          c('target_real_reference_hours', '理论直线现实参考时长', '小时', 8, 80, 0.5, '不等于实际单局总时长；用于标定门槛满足时的推进体验。'),
+          c('target_outer_world_years', '目标外界世界年', '年', 20, 50, 0.1, '用于“反推 F1 速度”按钮。当前基线约 47.55 年。'),
+          c('outer_world_year_min', '外界年验收下限', '年', 1, 60, 1, '低于该值时，外界流年感不足。'),
+          c('outer_world_year_max', '外界年验收上限', '年', 10, 100, 1, '高于该值时，理论直线路径过长。'),
+          c('local_domain_inner_years', '局部时间域主观经历目标', '主观年', 50, 1200, 1, '当前基线为 596 主观年，不等同完整生涯总年数。')
+        ]
+      },
+      {
+        title: 'X_time｜现实时间与速度输入',
+        desc: '控制 32 小时如何分配，以及各速度状态如何换算外界日历。',
+        open: true,
+        controls: [
+          c('N1_real_ratio', 'N1 现实占比', '%', 0, 100, 1, '现场交互、地图、交易、队列和低频选择。', true),
+          c('F1_real_ratio', 'F1 现实占比', '%', 0, 100, 1, '长期低交互、洞天闭关、托管和外界流年核心来源。', true),
+          c('B1_real_ratio', 'B1 现实占比', '%', 0, 100, 1, '突破、战斗和关键交锋。', true),
+          c('n1_seconds_per_outer_hour', 'N1 秒 / 外界小时', '秒/时', 5, 120, 1, '基线 15 秒 = 1 外界小时。'),
+          c('f1_seconds_per_outer_day', 'F1 秒 / 外界日', '秒/日', 0.5, 5, 0.05, '基线 1.5 秒 = 1 外界日。数值越小，外界年越长。'),
+          c('b1_seconds_per_outer_hour', 'B1 秒 / 外界小时', '秒/时', 15, 180, 1, '基线 60 秒 = 1 外界小时。')
+        ]
+      },
+      {
+        title: 'X_domain｜分域时间分配输入',
+        desc: '控制局部主观年如何拆成成长、支持、研习和道功修炼。',
+        open: true,
+        controls: [
+          c('local_domain_growth_ratio', '局部主观年：修行成长占比', '%', 0, 100, 1, '功法研习 + 道功修炼。', true),
+          c('local_domain_support_ratio', '局部主观年：支持行为占比', '%', 0, 100, 1, '疗伤、巩固、恢复、心魔处理、局部事件余量。', true),
+          c('method_study_ratio', '修行成长：功法研习占比', '%', 0, 100, 1, '功法掌握、法门理解、参悟和路线解锁。', true),
+          c('dao_cultivation_ratio', '修行成长：道功修炼占比', '%', 0, 100, 1, '修为推进、资源消耗、经脉压力和 CP 进度。', true),
+          c('outer_f1_ordinary_cultivation_ratio', '洞天外 F1 普通修炼占比', '%', 0, 50, 1, '建议 10%-20%，主要服务前期无洞天修炼和低阶普通闭关。', true)
+        ]
+      },
+      {
+        title: 'X_local｜局部时间域 / 洞天输入',
+        desc: '用于估算洞天窗口、进入次数、维护压力和局部风险。',
+        open: false,
+        controls: [
+          c('inner_years_per_outer_day', '洞天倍率：主观年 / 外界日', '年/日', 0.1, 20, 0.1, '示例调试值；正式数值应按 T0-T5 档位配置。'),
+          c('max_inner_years_per_entry', '单次进入主观年上限', '主观年', 1, 300, 1, '用于估算达到局部主观年目标需要几次进入。'),
+          c('resource_year_capacity_multiplier', '资源年承载倍率', '倍', 0.2, 3, 0.05, '洞天对资源包可支撑修炼年数的修正。'),
+          c('lifespan_pressure_modifier', '寿元压力倍率', '倍', 0.5, 3, 0.05, '>1 表示寿元压力更大；本页仅展示，不直接改写寿元安全年。'),
+          c('mental_risk_per_inner_year', '心魔风险 / 主观年', '率/年', 0, 0.2, 0.001, '用于 F1 批量中的主观年事件概率估算。'),
+          c('meridian_pressure_per_inner_year', '经脉压力 / 主观年', '率/年', 0, 0.2, 0.001, '用于观察连续闭关压力水平。'),
+          c('fuel_cost_per_inner_year', '阵法燃料成本 / 主观年', '成本/年', 0, 10, 0.1, '用于估算计划闭关的燃料成本。'),
+          c('maintenance_cost_per_outer_day', '洞天维护成本 / 外界日', '成本/日', 0, 50, 0.5, '用于估算外界日历推进下的维护成本。')
+        ]
+      },
+      {
+        title: 'X_resource｜资源年与收益输入',
+        desc: '用于检查有效修炼年、资源不足年和低效枯坐收益上限。',
+        open: false,
+        controls: [
+          c('planned_inner_years', '计划闭关 / 修炼主观年', '主观年', 1, 1200, 1, '玩家计划投入的主观修炼年。'),
+          c('resource_supported_inner_years', '资源可支撑年数', '主观年', 0, 1200, 1, '资源包、丹药、聚灵石、灵材等支撑的年数。'),
+          c('method_supported_inner_years', '功法可支撑年数', '主观年', 0, 1200, 1, '当前功法 / 境界可支撑的推进年数。'),
+          c('lifespan_safe_years', '寿元安全年数', '年', 0, 1500, 1, '角色当前状态下可承受的安全耗寿区间。'),
+          c('mental_stability_supported_years', '心神稳定年数', '主观年', 0, 1200, 1, '当前心神 / 心魔状态可承受的连续闭关年数。'),
+          c('unsupported_yield_ratio', '资源不足基础收益比例', '%', 0, 20, 1, '建议 0%-20%。', true),
+          c('base_cultivation_yield', '基础修炼收益', 'CP/年', 0.1, 10, 0.1, '仅用于估算收益上限，不代表正式修炼公式。')
+        ]
+      },
+      {
+        title: 'X_event｜F1 批量结算与事件输入',
+        desc: '用于调试单批 F1 推进的事件风险、摘要频率和可读性。',
+        open: false,
+        controls: [
+          c('max_f1_batch_horizon_early', '早期最大批次', '外界日/批', 1, 30, 1, '建议 1-3 外界日。'),
+          c('max_f1_batch_horizon_mid', '中期最大批次', '外界日/批', 1, 60, 1, '建议 7-15 外界日。'),
+          c('max_f1_batch_horizon_late', '后期最大批次', '外界日/批', 1, 180, 1, '建议 30-90 外界日。'),
+          c('base_rate_per_outer_day', '外界事件危险率', '率/日', 0, 0.3, 0.001, '宗门、市场、路途、世界事件等按外界日历采样。'),
+          c('base_rate_per_inner_year', '主观事件危险率', '率/年', 0, 0.3, 0.001, '心魔、药性、洞天异动等按主观年采样。'),
+          c('max_triggers_per_batch', '单批最大触发次数', '次/批', 1, 10, 1, '防止长批次事件堆叠失控。')
+        ]
+      }
+    ];
+
+    function c(key, label, unit, min, max, step, hint, percent=false) {
+      return { key, label, unit, min, max, step, hint, percent };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('xiuxian-time-model-tuner-v01');
+        if (!raw) return structuredClone(defaults);
+        const parsed = JSON.parse(raw);
+        return { ...structuredClone(defaults), ...parsed };
+      } catch (_) {
+        return structuredClone(defaults);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('xiuxian-time-model-tuner-v01', JSON.stringify(state));
+    }
+
+    function clamp(v, min, max) {
+      const n = Number(v);
+      if (Number.isNaN(n)) return min;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function fmt(n, digits = 2) {
+      if (!Number.isFinite(n)) return '—';
+      return Number(n).toLocaleString('zh-CN', { maximumFractionDigits: digits, minimumFractionDigits: digits });
+    }
+
+    function fmt0(n) {
+      if (!Number.isFinite(n)) return '—';
+      return Math.round(n).toLocaleString('zh-CN');
+    }
+
+    function pct(n, digits = 1) {
+      if (!Number.isFinite(n)) return '—';
+      return `${fmt(n * 100, digits)}%`;
+    }
+
+    function statusBadge(status, text) {
+      return `<span class="badge ${status}">${text}</span>`;
+    }
+
+    function renderControls() {
+      const root = document.getElementById('controls');
+      root.innerHTML = groups.map((group, idx) => `
+        <details class="control-group" ${group.open ? 'open' : ''}>
+          <summary>
+            <span>
+              <span class="summary-title">${group.title}</span>
+              <span class="summary-desc">${group.desc}</span>
+            </span>
+            <span class="chevron">›</span>
+          </summary>
+          <div class="control-body">
+            ${group.controls.map(controlHtml).join('')}
+          </div>
+        </details>
+      `).join('');
+
+      document.querySelectorAll('[data-key]').forEach(el => {
+        el.addEventListener('input', onInput);
+      });
+    }
+
+    function controlHtml(control) {
+      const displayValue = control.percent ? state[control.key] * 100 : state[control.key];
+      const inputStep = control.step;
+      return `
+        <div class="control">
+          <div class="control-label">
+            <strong>${control.label}</strong>
+            <code>${control.key}</code>
+          </div>
+          <p class="hint">${control.hint}</p>
+          <div class="input-row">
+            <input type="range" data-key="${control.key}" data-kind="range" data-percent="${control.percent ? '1' : '0'}" min="${control.min}" max="${control.max}" step="${inputStep}" value="${displayValue}">
+            <div>
+              <input type="number" data-key="${control.key}" data-kind="number" data-percent="${control.percent ? '1' : '0'}" min="${control.min}" max="${control.max}" step="${inputStep}" value="${displayValue}">
+              <span class="unit-label">${control.unit}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function onInput(evt) {
+      const el = evt.currentTarget;
+      const key = el.dataset.key;
+      const asPercent = el.dataset.percent === '1';
+      let value = Number(el.value);
+      if (asPercent) value = value / 100;
+      setValue(key, value);
+      saveState();
+      syncInputs();
+      renderAll();
+    }
+
+    function setValue(key, value) {
+      const lockTime = document.getElementById('lockTimeRatio')?.checked;
+      const lockLocal = document.getElementById('lockLocalRatio')?.checked;
+      const lockMethod = document.getElementById('lockMethodRatio')?.checked;
+
+      const timeKeys = ['N1_real_ratio', 'F1_real_ratio', 'B1_real_ratio'];
+      if (timeKeys.includes(key) && lockTime) {
+        const next = clamp(value, 0, 1);
+        const others = timeKeys.filter(k => k !== key);
+        const oldOtherSum = others.reduce((sum, k) => sum + state[k], 0);
+        const remaining = Math.max(0, 1 - next);
+        state[key] = next;
+        if (oldOtherSum <= 0) {
+          others.forEach(k => state[k] = remaining / others.length);
+        } else {
+          others.forEach(k => state[k] = state[k] / oldOtherSum * remaining);
+        }
+        normalizeTiny(timeKeys);
+        return;
+      }
+
+      if ((key === 'local_domain_growth_ratio' || key === 'local_domain_support_ratio') && lockLocal) {
+        const next = clamp(value, 0, 1);
+        state[key] = next;
+        state[key === 'local_domain_growth_ratio' ? 'local_domain_support_ratio' : 'local_domain_growth_ratio'] = 1 - next;
+        return;
+      }
+
+      if ((key === 'method_study_ratio' || key === 'dao_cultivation_ratio') && lockMethod) {
+        const next = clamp(value, 0, 1);
+        state[key] = next;
+        state[key === 'method_study_ratio' ? 'dao_cultivation_ratio' : 'method_study_ratio'] = 1 - next;
+        return;
+      }
+
+      state[key] = value;
+    }
+
+    function normalizeTiny(keys) {
+      const sum = keys.reduce((a, k) => a + state[k], 0);
+      if (sum === 0) return;
+      keys.forEach(k => state[k] = state[k] / sum);
+    }
+
+    function syncInputs() {
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.dataset.key;
+        const asPercent = el.dataset.percent === '1';
+        const next = asPercent ? state[key] * 100 : state[key];
+        if (document.activeElement !== el) el.value = Number(next).toFixed(asPercent ? 2 : precisionFor(el.step));
+      });
+    }
+
+    function precisionFor(step) {
+      const s = String(step || '1');
+      return s.includes('.') ? s.split('.')[1].length : 0;
+    }
+
+    function compute() {
+      const s = state;
+      const n1RealHours = s.target_real_reference_hours * s.N1_real_ratio;
+      const f1RealHours = s.target_real_reference_hours * s.F1_real_ratio;
+      const b1RealHours = s.target_real_reference_hours * s.B1_real_ratio;
+
+      const n1OuterYears = n1RealHours * 3600 / s.n1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+      const f1OuterYears = f1RealHours * 3600 / s.f1_seconds_per_outer_day / DAYS_PER_YEAR;
+      const b1OuterYears = b1RealHours * 3600 / s.b1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+      const totalOuterYears = n1OuterYears + f1OuterYears + b1OuterYears;
+
+      const localGrowthYears = s.local_domain_inner_years * s.local_domain_growth_ratio;
+      const localSupportYears = s.local_domain_inner_years * s.local_domain_support_ratio;
+      const localMethodYears = localGrowthYears * s.method_study_ratio;
+      const localDaoYears = localGrowthYears * s.dao_cultivation_ratio;
+
+      const outerOrdinaryCultivationYears = f1OuterYears * s.outer_f1_ordinary_cultivation_ratio;
+      const outerNonCultivationYears = f1OuterYears - outerOrdinaryCultivationYears;
+      const totalMethodYears = localMethodYears + outerOrdinaryCultivationYears * s.method_study_ratio;
+      const totalDaoYears = localDaoYears + outerOrdinaryCultivationYears * s.dao_cultivation_ratio;
+      const totalCultivationGrowthYears = totalMethodYears + totalDaoYears;
+
+      const resourceCap = s.resource_supported_inner_years * s.resource_year_capacity_multiplier;
+      const effectiveCultivationInnerYears = Math.min(
+        s.planned_inner_years,
+        resourceCap,
+        s.method_supported_inner_years,
+        s.lifespan_safe_years,
+        s.mental_stability_supported_years
+      );
+      const unsupportedInnerYears = Math.max(0, s.planned_inner_years - effectiveCultivationInnerYears);
+      const supportedYield = effectiveCultivationInnerYears * s.base_cultivation_yield;
+      const unsupportedYieldCap = unsupportedInnerYears * s.base_cultivation_yield * s.unsupported_yield_ratio;
+      const totalYieldCap = supportedYield + unsupportedYieldCap;
+
+      const localOuterDaysNeeded = s.inner_years_per_outer_day > 0 ? s.local_domain_inner_years / s.inner_years_per_outer_day : Infinity;
+      const localOuterYearsNeeded = localOuterDaysNeeded / DAYS_PER_YEAR;
+      const entriesNeeded = s.max_inner_years_per_entry > 0 ? Math.ceil(s.local_domain_inner_years / s.max_inner_years_per_entry) : Infinity;
+      const plannedFuelCost = s.planned_inner_years * s.fuel_cost_per_inner_year;
+      const plannedMaintenanceCost = localOuterDaysNeeded * s.maintenance_cost_per_outer_day;
+
+      const eventRows = ['early','mid','late'].map(stage => {
+        const days = stage === 'early' ? s.max_f1_batch_horizon_early : stage === 'mid' ? s.max_f1_batch_horizon_mid : s.max_f1_batch_horizon_late;
+        const innerYears = days * s.inner_years_per_outer_day;
+        const outerProb = probabilityAtLeastOne(s.base_rate_per_outer_day, days);
+        const innerProb = probabilityAtLeastOne(s.base_rate_per_inner_year, innerYears);
+        const combinedProb = 1 - (1 - outerProb) * (1 - innerProb);
+        const expectedOuter = s.base_rate_per_outer_day * days;
+        const expectedInner = s.base_rate_per_inner_year * innerYears;
+        return { stage, days, innerYears, outerProb, innerProb, combinedProb, expectedTotal: expectedOuter + expectedInner };
+      });
+
+      return {
+        n1RealHours, f1RealHours, b1RealHours,
+        n1OuterYears, f1OuterYears, b1OuterYears, totalOuterYears,
+        localGrowthYears, localSupportYears, localMethodYears, localDaoYears,
+        outerOrdinaryCultivationYears, outerNonCultivationYears,
+        totalMethodYears, totalDaoYears, totalCultivationGrowthYears,
+        resourceCap, effectiveCultivationInnerYears, unsupportedInnerYears,
+        supportedYield, unsupportedYieldCap, totalYieldCap,
+        localOuterDaysNeeded, localOuterYearsNeeded, entriesNeeded,
+        plannedFuelCost, plannedMaintenanceCost,
+        eventRows
+      };
+    }
+
+    function probabilityAtLeastOne(rate, duration) {
+      if (rate <= 0 || duration <= 0) return 0;
+      if (rate >= 1) return 1;
+      return 1 - Math.pow(1 - rate, duration);
+    }
+
+    function renderAll() {
+      const d = compute();
+      renderDashboard(d);
+      renderBars(d);
+      renderEvents(d);
+      renderChecks(d);
+      renderDerived(d);
+      renderSummary(d);
+    }
+
+    function targetStatus(d) {
+      if (d.totalOuterYears < state.outer_world_year_min) return ['bad', '低于下限'];
+      if (d.totalOuterYears > state.outer_world_year_max) return ['bad', '超过上限'];
+      const target = state.target_outer_world_years;
+      const delta = Math.abs(d.totalOuterYears - target);
+      if (delta <= 1) return ['good', '贴近目标'];
+      if (delta <= 5) return ['warn', '可接受偏差'];
+      return ['info', '区间内'];
+    }
+
+    function renderDashboard(d) {
+      const [status, label] = targetStatus(d);
+      const f1Share = d.totalOuterYears > 0 ? d.f1OuterYears / d.totalOuterYears : 0;
+      const resourceStatus = d.unsupportedInnerYears > 0 ? ['warn', '资源不足'] : ['good', '资源足够'];
+      const eventStatus = d.eventRows[0].combinedProb > 0.25 ? ['warn', '早期偏频繁'] : ['good', '早期可控'];
+      document.getElementById('dashboard').innerHTML = [
+        metric('总外界年', `${fmt(d.totalOuterYears, 2)} 年`, statusBadge(status, label), `验收 ${fmt(state.outer_world_year_min,0)}-${fmt(state.outer_world_year_max,0)} 年；目标 ${fmt(state.target_outer_world_years,2)} 年`),
+        metric('F1 外界年贡献', `${fmt(d.f1OuterYears, 2)} 年`, statusBadge('info', pct(f1Share, 1)), `F1 现实 ${fmt(d.f1RealHours,2)}h，速度 ${fmt(state.f1_seconds_per_outer_day,2)} 秒/日`),
+        metric('局部道功修炼年', `${fmt(d.localDaoYears, 1)} 年`, statusBadge('info', pct(state.dao_cultivation_ratio,0)), `局部成长 ${fmt(d.localGrowthYears,1)} 年，研习 ${fmt(d.localMethodYears,1)} 年`),
+        metric('有效修炼年', `${fmt(d.effectiveCultivationInnerYears, 1)} 年`, statusBadge(resourceStatus[0], resourceStatus[1]), `计划 ${fmt(state.planned_inner_years,1)} 年；资源瓶颈 ${fmt(d.resourceCap,1)} 年`),
+        metric('资源不足年', `${fmt(d.unsupportedInnerYears, 1)} 年`, statusBadge(d.unsupportedInnerYears > 0 ? 'warn' : 'good', d.unsupportedInnerYears > 0 ? '低效枯坐' : '无不足'), `不足收益上限 ${fmt(d.unsupportedYieldCap,1)} CP`),
+        metric('早期单批事件概率', pct(d.eventRows[0].combinedProb, 1), statusBadge(eventStatus[0], eventStatus[1]), `${fmt(d.eventRows[0].days,0)} 外界日 / 批；主观 ${fmt(d.eventRows[0].innerYears,1)} 年`)
+      ].join('');
+    }
+
+    function metric(label, value, badge, note) {
+      return `<div class="metric"><div class="label"><span>${label}</span>${badge}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+    }
+
+    function renderBars(d) {
+      const maxReal = Math.max(d.n1RealHours, d.f1RealHours, d.b1RealHours, 1);
+      const maxOuter = Math.max(d.n1OuterYears, d.f1OuterYears, d.b1OuterYears, 1);
+      document.getElementById('timeBars').innerHTML = `
+        <div class="bar-stack">
+          ${bar('N1 现实小时', d.n1RealHours, maxReal, `${fmt(d.n1RealHours,2)}h / ${pct(state.N1_real_ratio,1)}`, 'info')}
+          ${bar('F1 现实小时', d.f1RealHours, maxReal, `${fmt(d.f1RealHours,2)}h / ${pct(state.F1_real_ratio,1)}`, 'good')}
+          ${bar('B1 现实小时', d.b1RealHours, maxReal, `${fmt(d.b1RealHours,2)}h / ${pct(state.B1_real_ratio,1)}`, 'warn')}
+          ${bar('N1 外界年', d.n1OuterYears, maxOuter, `${fmt(d.n1OuterYears,3)} 年`, 'info')}
+          ${bar('F1 外界年', d.f1OuterYears, maxOuter, `${fmt(d.f1OuterYears,2)} 年`, 'good')}
+          ${bar('B1 外界年', d.b1OuterYears, maxOuter, `${fmt(d.b1OuterYears,3)} 年`, 'warn')}
+        </div>
+      `;
+
+      const maxLocal = Math.max(d.localDaoYears, d.localMethodYears, d.localSupportYears, 1);
+      document.getElementById('domainBars').innerHTML = `
+        <div class="bar-stack">
+          ${bar('功法研习：局部', d.localMethodYears, maxLocal, `${fmt(d.localMethodYears,1)} 年`, 'info')}
+          ${bar('道功修炼：局部', d.localDaoYears, maxLocal, `${fmt(d.localDaoYears,1)} 年`, 'good')}
+          ${bar('支持行为：局部', d.localSupportYears, maxLocal, `${fmt(d.localSupportYears,1)} 年`, 'warn')}
+          ${bar('洞天外 F1 普通修炼', d.outerOrdinaryCultivationYears, Math.max(d.f1OuterYears, 1), `${fmt(d.outerOrdinaryCultivationYears,1)} 年`, 'info')}
+          ${bar('洞天外 F1 非修行流年', d.outerNonCultivationYears, Math.max(d.f1OuterYears, 1), `${fmt(d.outerNonCultivationYears,1)} 年`, 'good')}
+        </div>
+      `;
+
+      const capMax = Math.max(state.planned_inner_years, d.resourceCap, state.method_supported_inner_years, state.lifespan_safe_years, state.mental_stability_supported_years, 1);
+      document.getElementById('resourceBars').innerHTML = `
+        <div class="bar-stack">
+          ${bar('计划年数', state.planned_inner_years, capMax, `${fmt(state.planned_inner_years,1)} 年`, 'info')}
+          ${bar('资源上限 × 洞天倍率', d.resourceCap, capMax, `${fmt(d.resourceCap,1)} 年`, d.resourceCap < state.planned_inner_years ? 'warn' : 'good')}
+          ${bar('功法上限', state.method_supported_inner_years, capMax, `${fmt(state.method_supported_inner_years,1)} 年`, state.method_supported_inner_years < state.planned_inner_years ? 'warn' : 'good')}
+          ${bar('寿元安全上限', state.lifespan_safe_years, capMax, `${fmt(state.lifespan_safe_years,1)} 年`, state.lifespan_safe_years < state.planned_inner_years ? 'bad' : 'good')}
+          ${bar('心神稳定上限', state.mental_stability_supported_years, capMax, `${fmt(state.mental_stability_supported_years,1)} 年`, state.mental_stability_supported_years < state.planned_inner_years ? 'warn' : 'good')}
+          ${bar('有效修炼年', d.effectiveCultivationInnerYears, capMax, `${fmt(d.effectiveCultivationInnerYears,1)} 年`, d.unsupportedInnerYears > 0 ? 'warn' : 'good')}
+        </div>
+      `;
+    }
+
+    function bar(label, value, max, right, cls='') {
+      const width = max > 0 ? Math.max(0, Math.min(100, value / max * 100)) : 0;
+      return `
+        <div class="bar-row">
+          <div class="bar-top"><span>${label}</span><strong>${right}</strong></div>
+          <div class="bar-track"><div class="bar-fill ${cls}" style="width:${width}%"></div></div>
+        </div>
+      `;
+    }
+
+    function renderEvents(d) {
+      const stageName = { early: '早期', mid: '中期', late: '后期' };
+      document.getElementById('eventTable').innerHTML = `
+        <table>
+          <thead><tr><th>阶段</th><th>批次外界日</th><th>批次主观年</th><th>外界事件</th><th>主观事件</th><th>综合概率</th><th>期望触发</th></tr></thead>
+          <tbody>
+            ${d.eventRows.map(r => `
+              <tr>
+                <td>${stageName[r.stage]}</td>
+                <td>${fmt(r.days,0)}</td>
+                <td>${fmt(r.innerYears,1)}</td>
+                <td>${pct(r.outerProb,1)}</td>
+                <td>${pct(r.innerProb,1)}</td>
+                <td><strong>${pct(r.combinedProb,1)}</strong></td>
+                <td>${fmt(Math.min(r.expectedTotal, state.max_triggers_per_batch),2)} / 批</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderChecks(d) {
+      const checks = getChecks(d);
+      document.getElementById('checks').innerHTML = checks.map(ch => `
+        <div class="check ${ch.status}">
+          ${statusBadge(ch.status, ch.status === 'good' ? '通过' : ch.status === 'bad' ? '错误' : ch.status === 'warn' ? '警告' : '提示')}
+          <div><strong>${ch.id}</strong> ${ch.text}</div>
+        </div>
+      `).join('');
+    }
+
+    function getChecks(d) {
+      const ratioSum = state.N1_real_ratio + state.F1_real_ratio + state.B1_real_ratio;
+      const localSum = state.local_domain_growth_ratio + state.local_domain_support_ratio;
+      const methodSum = state.method_study_ratio + state.dao_cultivation_ratio;
+      const checks = [];
+      checks.push({ id: 'C01', status: Math.abs(ratioSum - 1) < 0.0001 ? 'good' : 'bad', text: `现实时间占比总和 = ${pct(ratioSum,2)}。` });
+      checks.push({ id: 'T_outer', status: d.totalOuterYears >= state.outer_world_year_min && d.totalOuterYears <= state.outer_world_year_max ? 'good' : 'bad', text: `总外界年 ${fmt(d.totalOuterYears,2)}，验收范围 ${fmt(state.outer_world_year_min,0)}-${fmt(state.outer_world_year_max,0)} 年。` });
+      checks.push({ id: 'C05', status: Math.abs(localSum - 1) < 0.0001 ? 'good' : 'bad', text: `局部成长 + 支持 = ${pct(localSum,2)}。` });
+      checks.push({ id: 'C06', status: Math.abs(methodSum - 1) < 0.0001 ? 'good' : 'bad', text: `功法研习 + 道功修炼 = ${pct(methodSum,2)}。` });
+      checks.push({ id: 'C07', status: state.outer_f1_ordinary_cultivation_ratio >= 0 && state.outer_f1_ordinary_cultivation_ratio <= 1 ? 'good' : 'bad', text: `洞天外 F1 普通修炼占比 = ${pct(state.outer_f1_ordinary_cultivation_ratio,1)}。` });
+      checks.push({ id: 'C08', status: d.effectiveCultivationInnerYears <= state.planned_inner_years ? 'good' : 'bad', text: `有效修炼年 ${fmt(d.effectiveCultivationInnerYears,1)} ≤ 计划年 ${fmt(state.planned_inner_years,1)}。` });
+      checks.push({ id: 'C09', status: d.unsupportedInnerYears >= 0 ? 'good' : 'bad', text: `资源不足年 = ${fmt(d.unsupportedInnerYears,1)}。` });
+      checks.push({ id: 'H08', status: d.unsupportedInnerYears > 0 ? 'warn' : 'good', text: d.unsupportedInnerYears > 0 ? `洞天闭关资源不足，${fmt(d.unsupportedInnerYears,1)} 年只能获得低效收益。` : '洞天资源年足以覆盖计划修炼。' });
+      checks.push({ id: 'F1 占比', status: d.f1OuterYears / Math.max(d.totalOuterYears, 0.001) > 0.9 ? 'info' : 'warn', text: `F1 贡献 ${pct(d.f1OuterYears / Math.max(d.totalOuterYears, 0.001),1)} 外界年；当前模型本来预期外界流年主要由 F1 承担。` });
+      checks.push({ id: '洞天窗口', status: d.localOuterYearsNeeded <= d.f1OuterYears ? 'good' : 'warn', text: `按当前洞天倍率，596 主观年需要约 ${fmt(d.localOuterDaysNeeded,1)} 外界日（${fmt(d.localOuterYearsNeeded,2)} 年），约 ${fmt0(d.entriesNeeded)} 次进入。` });
+      checks.push({ id: '事件密度', status: d.eventRows[0].combinedProb <= 0.25 ? 'good' : 'warn', text: `早期单批综合事件概率 ${pct(d.eventRows[0].combinedProb,1)}；若频繁打断，可降低危险率或缩短早期批次。` });
+      return checks;
+    }
+
+    function renderDerived(d) {
+      const rows = [
+        ['N1_real_hours', fmt(d.n1RealHours, 2), 'N1 现实小时'],
+        ['F1_real_hours', fmt(d.f1RealHours, 2), 'F1 现实小时'],
+        ['B1_real_hours', fmt(d.b1RealHours, 2), 'B1 现实小时'],
+        ['N1_outer_years', fmt(d.n1OuterYears, 3), 'N1 外界年贡献'],
+        ['F1_outer_years', fmt(d.f1OuterYears, 2), 'F1 外界年贡献'],
+        ['B1_outer_years', fmt(d.b1OuterYears, 3), 'B1 外界年贡献'],
+        ['total_outer_world_years', fmt(d.totalOuterYears, 2), '总外界年'],
+        ['local_growth_years', fmt(d.localGrowthYears, 1), '局部修行成长年'],
+        ['local_method_study_years', fmt(d.localMethodYears, 1), '局部功法研习年'],
+        ['local_dao_cultivation_years', fmt(d.localDaoYears, 1), '局部道功修炼年'],
+        ['local_support_years', fmt(d.localSupportYears, 1), '局部支持行为年'],
+        ['outer_ordinary_cultivation_years', fmt(d.outerOrdinaryCultivationYears, 1), '洞天外 F1 普通修炼年'],
+        ['outer_non_cultivation_years', fmt(d.outerNonCultivationYears, 1), '洞天外 F1 非修行流年'],
+        ['total_method_study_years', fmt(d.totalMethodYears, 1), '总功法研习年'],
+        ['total_dao_cultivation_years', fmt(d.totalDaoYears, 1), '总道功修炼年'],
+        ['effective_cultivation_inner_years', fmt(d.effectiveCultivationInnerYears, 1), '有效修炼年'],
+        ['unsupported_inner_years', fmt(d.unsupportedInnerYears, 1), '资源不足年'],
+        ['total_yield_cap', fmt(d.totalYieldCap, 1), '估算收益上限 CP'],
+        ['planned_fuel_cost', fmt(d.plannedFuelCost, 1), '计划闭关燃料成本'],
+        ['planned_maintenance_cost', fmt(d.plannedMaintenanceCost, 1), '达到局部目标所需维护成本']
+      ];
+      document.getElementById('derivedTable').innerHTML = `
+        <table>
+          <thead><tr><th>字段</th><th>值</th><th>说明</th></tr></thead>
+          <tbody>${rows.map(r => `<tr><td><code>${r[0]}</code></td><td><strong>${r[1]}</strong></td><td>${r[2]}</td></tr>`).join('')}</tbody>
+        </table>
+      `;
+    }
+
+    function renderSummary(d) {
+      const [status, label] = targetStatus(d);
+      const summary = [
+        '【修为时间数学模型调参摘要】',
+        `现实参考时长：${fmt(state.target_real_reference_hours,2)} 小时`,
+        `现实占比：N1 ${pct(state.N1_real_ratio,1)} / F1 ${pct(state.F1_real_ratio,1)} / B1 ${pct(state.B1_real_ratio,1)}`,
+        `速度：N1 ${fmt(state.n1_seconds_per_outer_hour,1)}秒/外界小时；F1 ${fmt(state.f1_seconds_per_outer_day,2)}秒/外界日；B1 ${fmt(state.b1_seconds_per_outer_hour,1)}秒/外界小时`,
+        `外界年：N1 ${fmt(d.n1OuterYears,3)} + F1 ${fmt(d.f1OuterYears,2)} + B1 ${fmt(d.b1OuterYears,3)} = ${fmt(d.totalOuterYears,2)} 年（${label}）`,
+        `局部主观年：${fmt(state.local_domain_inner_years,1)} 年；成长 ${pct(state.local_domain_growth_ratio,1)} / 支持 ${pct(state.local_domain_support_ratio,1)}`,
+        `局部拆分：功法研习 ${fmt(d.localMethodYears,1)} 年；道功修炼 ${fmt(d.localDaoYears,1)} 年；支持行为 ${fmt(d.localSupportYears,1)} 年`,
+        `洞天外 F1：普通修炼 ${fmt(d.outerOrdinaryCultivationYears,1)} 年；非修行流年 ${fmt(d.outerNonCultivationYears,1)} 年`,
+        `资源年：计划 ${fmt(state.planned_inner_years,1)} 年；有效 ${fmt(d.effectiveCultivationInnerYears,1)} 年；资源不足 ${fmt(d.unsupportedInnerYears,1)} 年；低效收益上限 ${fmt(d.unsupportedYieldCap,1)} CP`,
+        `F1 批量：早期 ${fmt(state.max_f1_batch_horizon_early,0)}日 / 中期 ${fmt(state.max_f1_batch_horizon_mid,0)}日 / 后期 ${fmt(state.max_f1_batch_horizon_late,0)}日；早期综合事件概率 ${pct(d.eventRows[0].combinedProb,1)}`,
+        `主要约束：速度状态 N1/F1/B1/P0；F1 不逐小时全量 tick；寿元读取角色所在时间域；阶段预算读取外界时间；轮回不保证缩短总通关时间。`
+      ].join('\n');
+      document.getElementById('summaryText').textContent = summary;
+    }
+
+    function applyPreset(name) {
+      if (name === 'baseline') {
+        state = structuredClone(defaults);
+      }
+      if (name === 'outer40') {
+        state = { ...state, f1_seconds_per_outer_day: 1.8, target_outer_world_years: 40 };
+      }
+      if (name === 'outer30') {
+        state = { ...state, f1_seconds_per_outer_day: 2.4, target_outer_world_years: 30 };
+      }
+      if (name === 'highPressure') {
+        state = {
+          ...state,
+          local_domain_inner_years: 700,
+          resource_supported_inner_years: 420,
+          mental_stability_supported_years: 450,
+          mental_risk_per_inner_year: 0.035,
+          meridian_pressure_per_inner_year: 0.04,
+          unsupported_yield_ratio: 0.05,
+          inner_years_per_outer_day: 4,
+          max_inner_years_per_entry: 60
+        };
+      }
+      saveState();
+      renderControls();
+      renderAll();
+      toast('已应用预设');
+    }
+
+    function solveF1Speed() {
+      const n1RealHours = state.target_real_reference_hours * state.N1_real_ratio;
+      const b1RealHours = state.target_real_reference_hours * state.B1_real_ratio;
+      const n1OuterYears = n1RealHours * 3600 / state.n1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+      const b1OuterYears = b1RealHours * 3600 / state.b1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+      const targetF1Years = state.target_outer_world_years - n1OuterYears - b1OuterYears;
+      if (targetF1Years <= 0) {
+        toast('目标外界年过低，无法反推 F1 速度');
+        return;
+      }
+      const f1RealHours = state.target_real_reference_hours * state.F1_real_ratio;
+      const seconds = f1RealHours * 3600 / (targetF1Years * DAYS_PER_YEAR);
+      state.f1_seconds_per_outer_day = clamp(seconds, 0.1, 20);
+      saveState();
+      syncInputs();
+      renderAll();
+      toast(`已反推 F1 = ${fmt(state.f1_seconds_per_outer_day,2)} 秒/外界日`);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (_) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+      }
+      toast('已复制摘要');
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `xiuxian_time_model_params_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('已导出 JSON');
+    }
+
+    function importJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const next = structuredClone(defaults);
+          Object.keys(next).forEach(k => {
+            if (Object.prototype.hasOwnProperty.call(parsed, k) && Number.isFinite(Number(parsed[k]))) {
+              next[k] = Number(parsed[k]);
+            }
+          });
+          state = next;
+          saveState();
+          renderControls();
+          renderAll();
+          toast('已导入 JSON');
+        } catch (err) {
+          toast('导入失败：JSON 格式错误');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function toast(text) {
+      const el = document.getElementById('toast');
+      el.textContent = text;
+      el.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+    }
+
+    document.getElementById('solveF1').addEventListener('click', solveF1Speed);
+    document.getElementById('copySummary').addEventListener('click', () => copyText(document.getElementById('summaryText').textContent));
+    document.getElementById('copySummary2').addEventListener('click', () => copyText(document.getElementById('summaryText').textContent));
+    document.getElementById('exportJson').addEventListener('click', exportJson);
+    document.getElementById('importJson').addEventListener('change', e => importJson(e.target.files[0]));
+    document.getElementById('resetDefaults').addEventListener('click', () => applyPreset('baseline'));
+    document.querySelectorAll('[data-preset]').forEach(btn => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
+    ['lockTimeRatio','lockLocalRatio','lockMethodRatio'].forEach(id => document.getElementById(id).addEventListener('change', () => { renderAll(); }));
+
+    renderControls();
+    renderAll();
+  </script>
+</body>
+</html>

@@ -609,6 +609,11 @@
         </section>
 
         <section class="result-card">
+          <h3>分阶段时间曲线</h3>
+          <div class="content" id="stageCurveTable"></div>
+        </section>
+
+        <section class="result-card">
           <h3>局部时间域与修行成长</h3>
           <div class="content" id="domainBars"></div>
         </section>
@@ -655,6 +660,7 @@
   <script>
     const DAYS_PER_YEAR = 360;
     const HOURS_PER_DAY = 24;
+    const BASELINE_REAL_REFERENCE_HOURS = 32;
 
     const defaults = {
       target_real_reference_hours: 32,
@@ -701,6 +707,81 @@
       base_rate_per_inner_year: 0.01,
       max_triggers_per_batch: 2
     };
+
+    const stageCurve = [
+      {
+        stage: '炼气 -> 筑基',
+        standardYears: 8,
+        totalHours: 3.00,
+        n1Hours: 2.45,
+        f1Hours: 0.30,
+        b1Hours: 0.25,
+        note: '外部世界修炼为主；前期信息量高，N1 占比最高'
+      },
+      {
+        stage: '筑基 -> 金丹',
+        standardYears: 30,
+        totalHours: 3.20,
+        n1Hours: 2.30,
+        f1Hours: 0.55,
+        b1Hours: 0.35,
+        note: '开始引入独立时间域；外部仍 N1 为主、F1 为辅'
+      },
+      {
+        stage: '金丹 -> 元婴',
+        standardYears: 80,
+        totalHours: 3.60,
+        n1Hours: 2.38,
+        f1Hours: 0.80,
+        b1Hours: 0.42,
+        note: '集中开放时间域，抬升多人同步 F1 占比'
+      },
+      {
+        stage: '元婴 -> 化神',
+        standardYears: 180,
+        totalHours: 4.00,
+        n1Hours: 2.63,
+        f1Hours: 0.90,
+        b1Hours: 0.47,
+        note: '中期核心循环，时间域、资源准备和突破共同承载'
+      },
+      {
+        stage: '化神 -> 炼虚',
+        standardYears: 360,
+        totalHours: 4.30,
+        n1Hours: 2.78,
+        f1Hours: 1.00,
+        b1Hours: 0.52,
+        note: '高阶窗口和资源争夺增加，F1 占比继续提高'
+      },
+      {
+        stage: '炼虚 -> 合体',
+        standardYears: 600,
+        totalHours: 4.50,
+        n1Hours: 2.83,
+        f1Hours: 1.10,
+        b1Hours: 0.57,
+        note: '集中闭关更强，外部事件和世界窗口更复杂'
+      },
+      {
+        stage: '合体 -> 大乘',
+        standardYears: 900,
+        totalHours: 4.60,
+        n1Hours: 2.84,
+        f1Hours: 1.15,
+        b1Hours: 0.61,
+        note: '顶级资源、道统竞争和突破准备为主'
+      },
+      {
+        stage: '大乘 -> 渡劫',
+        standardYears: 1200,
+        totalHours: 4.80,
+        n1Hours: 2.91,
+        f1Hours: 1.24,
+        b1Hours: 0.65,
+        note: '终局前准备；F1 占比最高但不能替代关键决策'
+      }
+    ];
 
     let state = loadState();
 
@@ -1012,6 +1093,7 @@
       return {
         n1RealHours, f1RealHours, b1RealHours,
         n1OuterYears, f1OuterYears, b1OuterYears, totalOuterYears,
+        stageRows: computeStageRows(s),
         localGrowthYears, localSupportYears, localMethodYears, localDaoYears,
         outerOrdinaryCultivationYears, outerNonCultivationYears,
         totalMethodYears, totalDaoYears, totalCultivationGrowthYears,
@@ -1021,6 +1103,33 @@
         plannedFuelCost, plannedMaintenanceCost,
         eventRows
       };
+    }
+
+    function computeStageRows(s) {
+      const scale = s.target_real_reference_hours / BASELINE_REAL_REFERENCE_HOURS;
+      return stageCurve.map(row => {
+        const totalHours = row.totalHours * scale;
+        const n1Hours = row.n1Hours * scale;
+        const f1Hours = row.f1Hours * scale;
+        const b1Hours = row.b1Hours * scale;
+        const n1OuterYears = n1Hours * 3600 / s.n1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+        const f1OuterYears = f1Hours * 3600 / s.f1_seconds_per_outer_day / DAYS_PER_YEAR;
+        const b1OuterYears = b1Hours * 3600 / s.b1_seconds_per_outer_hour / HOURS_PER_DAY / DAYS_PER_YEAR;
+        const totalOuterYears = n1OuterYears + f1OuterYears + b1OuterYears;
+        const effectiveMultiplier = row.standardYears / Math.max(totalOuterYears, 0.001);
+        return {
+          ...row,
+          totalHours,
+          n1Hours,
+          f1Hours,
+          b1Hours,
+          n1OuterYears,
+          f1OuterYears,
+          b1OuterYears,
+          totalOuterYears,
+          effectiveMultiplier
+        };
+      });
     }
 
     function probabilityAtLeastOne(rate, duration) {
@@ -1033,6 +1142,7 @@
       const d = compute();
       renderDashboard(d);
       renderBars(d);
+      renderStageCurve(d);
       renderEvents(d);
       renderChecks(d);
       renderDerived(d);
@@ -1107,6 +1217,59 @@
       `;
     }
 
+    function renderStageCurve(d) {
+      const totals = d.stageRows.reduce((acc, row) => {
+        for (const key of ['totalHours', 'n1Hours', 'f1Hours', 'b1Hours', 'f1OuterYears', 'totalOuterYears']) {
+          acc[key] = (acc[key] || 0) + row[key];
+        }
+        return acc;
+      }, {});
+      document.getElementById('stageCurveTable').innerHTML = `
+        <p class="hint">按 2026-05-17 裁决后的正式阶段曲线缩放：炼气前以外部世界和 N1 学习决策为主；筑基到金丹引入独立时间域；金丹以后用集中开放的时间域提高 F1 占比。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>现实目标</th>
+              <th>N1</th>
+              <th>F1</th>
+              <th>B1</th>
+              <th>F1 外界年</th>
+              <th>阶段外界年</th>
+              <th>综合倍率</th>
+              <th>口径</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${d.stageRows.map(row => `
+              <tr>
+                <td>${row.stage}</td>
+                <td>${fmt(row.totalHours,2)}h</td>
+                <td>${fmt(row.n1Hours,2)}h</td>
+                <td>${fmt(row.f1Hours,2)}h</td>
+                <td>${fmt(row.b1Hours,2)}h</td>
+                <td>${fmt(row.f1OuterYears,1)} 年</td>
+                <td>${fmt(row.totalOuterYears,2)} 年</td>
+                <td>x${fmt(row.effectiveMultiplier,1)}</td>
+                <td>${row.note}</td>
+              </tr>
+            `).join('')}
+            <tr>
+              <td><strong>合计</strong></td>
+              <td><strong>${fmt(totals.totalHours,2)}h</strong></td>
+              <td><strong>${fmt(totals.n1Hours,2)}h</strong></td>
+              <td><strong>${fmt(totals.f1Hours,2)}h</strong></td>
+              <td><strong>${fmt(totals.b1Hours,2)}h</strong></td>
+              <td><strong>${fmt(totals.f1OuterYears,2)} 年</strong></td>
+              <td><strong>${fmt(totals.totalOuterYears,2)} 年</strong></td>
+              <td>—</td>
+              <td>默认对齐 32h / 47.55 年；50h Debug 按比例放大</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
     function bar(label, value, max, right, cls='') {
       const width = max > 0 ? Math.max(0, Math.min(100, value / max * 100)) : 0;
       return `
@@ -1168,6 +1331,7 @@
       checks.push({ id: 'C09', status: d.unsupportedInnerYears >= 0 ? 'good' : 'bad', text: `资源不足年 = ${fmt(d.unsupportedInnerYears,1)}。` });
       checks.push({ id: 'H08', status: d.unsupportedInnerYears > 0 ? 'warn' : 'good', text: d.unsupportedInnerYears > 0 ? `洞天闭关资源不足，${fmt(d.unsupportedInnerYears,1)} 年只能获得低效收益。` : '洞天资源年足以覆盖计划修炼。' });
       checks.push({ id: 'F1 占比', status: d.f1OuterYears / Math.max(d.totalOuterYears, 0.001) > 0.9 ? 'info' : 'warn', text: `F1 贡献 ${pct(d.f1OuterYears / Math.max(d.totalOuterYears, 0.001),1)} 外界年；当前模型本来预期外界流年主要由 F1 承担。` });
+      checks.push({ id: '阶段曲线', status: Math.abs(d.stageRows.reduce((sum, row) => sum + row.totalHours, 0) - state.target_real_reference_hours) <= 0.01 ? 'good' : 'bad', text: `分阶段现实目标合计 ${fmt(d.stageRows.reduce((sum, row) => sum + row.totalHours, 0),2)} 小时。` });
       checks.push({ id: '洞天窗口', status: d.localOuterYearsNeeded <= d.f1OuterYears ? 'good' : 'warn', text: `按当前洞天倍率，596 主观年需要约 ${fmt(d.localOuterDaysNeeded,1)} 外界日（${fmt(d.localOuterYearsNeeded,2)} 年），约 ${fmt0(d.entriesNeeded)} 次进入。` });
       checks.push({ id: '事件密度', status: d.eventRows[0].combinedProb <= 0.25 ? 'good' : 'warn', text: `早期单批综合事件概率 ${pct(d.eventRows[0].combinedProb,1)}；若频繁打断，可降低危险率或缩短早期批次。` });
       return checks;
@@ -1213,6 +1377,7 @@
         `现实占比：N1 ${pct(state.N1_real_ratio,1)} / F1 ${pct(state.F1_real_ratio,1)} / B1 ${pct(state.B1_real_ratio,1)}`,
         `速度：N1 ${fmt(state.n1_seconds_per_outer_hour,1)}秒/外界小时；F1 ${fmt(state.f1_seconds_per_outer_day,2)}秒/外界日；B1 ${fmt(state.b1_seconds_per_outer_hour,1)}秒/外界小时`,
         `外界年：N1 ${fmt(d.n1OuterYears,3)} + F1 ${fmt(d.f1OuterYears,2)} + B1 ${fmt(d.b1OuterYears,3)} = ${fmt(d.totalOuterYears,2)} 年（${label}）`,
+        `阶段曲线：炼气到筑基 ${fmt(d.stageRows[0].totalHours,2)}h，筑基到金丹 ${fmt(d.stageRows[1].totalHours,2)}h；金丹后 F1 占比逐段提高，阶段合计 ${fmt(d.stageRows.reduce((sum, row) => sum + row.totalHours, 0),2)}h`,
         `局部主观年：${fmt(state.local_domain_inner_years,1)} 年；成长 ${pct(state.local_domain_growth_ratio,1)} / 支持 ${pct(state.local_domain_support_ratio,1)}`,
         `局部拆分：功法研习 ${fmt(d.localMethodYears,1)} 年；道功修炼 ${fmt(d.localDaoYears,1)} 年；支持行为 ${fmt(d.localSupportYears,1)} 年`,
         `洞天外 F1：普通修炼 ${fmt(d.outerOrdinaryCultivationYears,1)} 年；非修行流年 ${fmt(d.outerNonCultivationYears,1)} 年`,

@@ -10,44 +10,28 @@ This file applies to the `xiuxian-game` project root. Do not use files outside t
 
 ## Current Status
 
-Checked on 2026-05-13.
+Checked on 2026-05-20.
 
 The current formal design document package is:
 
 - `docs/xiuxian_design_docs`
 
-This package was promoted out of `docs/inbox` and is now the primary basis for design interpretation, MVP planning, and MVP implementation work. It can still be revised during development, but changes should support current design clarity and accepted gameplay decisions rather than recreate the previous reorganization phase or record implementation mechanics.
+This package was promoted out of `docs/inbox` and is now the primary basis for design interpretation, MVP planning, and any later implementation work.
 
-Current work mode is MVP development. Codex-side work should prioritize implementing, validating, and tightening the MVP against the formal design package. Documentation updates remain in scope when they clarify MVP behavior, record accepted design decisions, or surface implementation-blocking design gaps. Development details, technical implementation notes, smoke-test results, local tool decisions, and transient recovery strategies should stay outside the formal design package unless the user explicitly approves promoting them into design authority.
+Current work mode is design package correction. The MVP development state reached before this date is locked for now: do not continue gameplay, runtime, client, tooling, test, or balance implementation unless the user explicitly unlocks development or requests a narrow maintenance action.
 
 Current focus:
 
-- Implement MVP slices against `docs/xiuxian_design_docs`.
-- Use the formal package to derive runtime, Godot client, data, test, tooling, and acceptance work.
-- Keep edits scoped to the MVP slice or user-requested task.
-- Record or surface design gaps, stale-vs-active ambiguity, and non-mechanical choices instead of deciding silently.
-- Treat historical documents as reference material only; accepted gameplay, numeric, UI, or worldbuilding details must be restated in the formal package or directly authorized by the user before driving implementation. Implementation details should instead be kept in development docs, code comments, tests, or commit/PR notes.
+- Review, repair, and tighten `docs/xiuxian_design_docs` as the current design authority.
+- Clarify gameplay, numeric, UI, terminology, and worldbuilding decisions.
+- Resolve package-internal conflicts, stale-vs-active ambiguity, missing references, and design gates.
+- Keep the formal package self-contained. Adopted details from historical materials must be restated in the formal package or directly authorized by the user.
+- Surface unresolved non-mechanical choices for user judgment instead of deciding silently.
+- Keep implementation mechanics out of the formal package unless the user explicitly promotes them into design authority.
 
 ## Technical Stack Direction
 
-The project is a Godot game project. MVP development and final production should use Godot as the primary playable client and runtime target, rather than building a separate Web application as the main MVP.
-
-Target distribution is a desktop Steam release. Web browser distribution is not a product requirement, and technical choices should not be optimized around Godot Web export, browser compatibility, or Web-first deployment unless the user explicitly changes the target.
-
-MVP UI may be low fidelity and should prioritize playable workflows, debug visibility, validation speed, and implementation clarity over final visual polish, animation quality, or high-fidelity layout matching.
-
-Prefer a Godot-first architecture:
-
-- Keep core gameplay rules, room state, time progression, command queues, settlement, result packages, save/load, and replay/debug records in testable runtime modules.
-- Keep UI scenes thin; they should submit player intent, display authoritative state, and show result summaries rather than own settlement logic.
-- Use local developer tooling where it improves validation, such as command-line runners, debug scenes, structured logs, replay viewers, or numeric simulation scripts.
-- Local Godot environment checked on 2026-05-12: `/Applications/Godot.app/Contents/MacOS/Godot`, version `4.6.2.stable.official.71f334935`. `scripts/run_godot_smoke.sh` should prefer `GODOT_BIN`, then `godot4`, then `godot`, then this macOS app-bundle path.
-- Godot may crash inside the Codex filesystem sandbox when it cannot write its normal `user://logs` files. If a Godot smoke or headless run fails with `user://logs` write errors under sandboxing, rerun the project smoke command outside the sandbox with `sh scripts/run_godot_smoke.sh`; this is the normal local verification path.
-- Do not introduce a Web frontend solely for MVP speed. Web or script-based tools may be used only as local developer utilities, such as viewing exported JSON logs or balance reports, when they do not become the authoritative runtime.
-
-Configuration and balance data should be data-driven. It is acceptable to edit configuration tables in local Excel workbooks during design and balancing, then export them into structured project formats such as CSV, JSON, TOML, or another Godot-friendly format chosen during implementation. The exported structured files, not the spreadsheet UI state, should be treated as runtime inputs.
-
-Godot version, scripting language, test framework, data format, build pipeline, and local tooling should be chosen by implementation best practice for a desktop Steam Godot game, with decisions recorded when they affect maintainability, testing, save compatibility, or production workflow.
+The product target remains a Godot desktop game for Steam. Web browser distribution is not a product requirement. While development is frozen, this section is only a future-implementation constraint, not a work queue.
 
 ## Source Precedence
 
@@ -61,23 +45,20 @@ AGENTS.md
 -> CLAUDE.md compatibility notes, reference only
 ```
 
-Do not treat old `docs/index.md`, old `docs/CHANGELOG.md`, formerly canonical docs under `docs/inbox/historical_reference_docs`, or other non-package inbox files as current authority. They may help recover lost details, identify conflicts, or support manual review, but imported decisions must be restated inside `docs/xiuxian_design_docs` or explicitly confirmed by the user before implementation depends on them.
+Do not treat old `docs/index.md`, old `docs/CHANGELOG.md`, formerly canonical docs under `docs/inbox/historical_reference_docs`, or other non-package inbox files as current authority. They may help recover lost details, identify conflicts, or support manual review, but imported decisions must be restated inside `docs/xiuxian_design_docs` or explicitly confirmed by the user before the active design package or any later implementation depends on them.
 
-## MVP Development Rules
+## Development Freeze
 
-- Before implementing a slice, identify the relevant formal-package documents and use them as the design contract.
-- If the formal package is silent or internally conflicted on a behavior that affects implementation, ask for user judgment or record a narrow design gate before coding around it.
-- Prefer small vertical MVP increments with tests or runnable verification over broad infrastructure rewrites.
-- Keep implementation notes, acceptance constraints, technical risks, and local validation records in `docs/development`, code-adjacent technical notes, tests, or tooling docs. Do not write implementation mechanics back into `docs/xiuxian_design_docs`.
-- Update `docs/xiuxian_design_docs` only for stable gameplay, numeric, UI, terminology, or worldbuilding decisions that are design authority, preferably after explicit user confirmation.
-- Do not update historical reference documents in `docs/inbox` as if they were active docs unless the user explicitly asks for archive maintenance.
+- Do not implement new MVP slices, runtime systems, Godot scenes, tests, tools, exports, or balance pipelines unless the user explicitly resumes development.
+- Treat existing development artifacts as a locked snapshot. Read them only as context for design-package repair or user-requested maintenance.
+- If a design-package fix reveals a future implementation issue, record it as a design gap or development note instead of coding around it.
 
 ## Documentation Rules
 
-- Codex-side work should default to MVP implementation. Update development docs when tracking implementation progress, technical decisions, verification results, or local workflow details.
-- Do not backfill development details into the formal design package. Examples that should not be written to `docs/xiuxian_design_docs` by default include class/module names, save/load implementation mechanics, smoke-runner behavior, local Godot paths, recovery implementation strategies, test outputs, and temporary scaffolding choices.
-- Update `docs/xiuxian_design_docs` only when the change clarifies current design behavior, records a user-accepted gameplay/design decision, resolves a design conflict, or surfaces an implementation-blocking design gap. When in doubt, ask before editing the formal package.
-- New persisted implementation documents, technical notes, schemas, configuration comments, and code comments should prefer English. Existing Chinese design documents may remain Chinese when preserving established design terminology, but implementation-facing documentation should default to English unless the user asks otherwise.
+- Codex-side work should default to design-package correction until the user resumes development.
+- Update `docs/xiuxian_design_docs` when the change clarifies current design behavior, records a user-accepted gameplay/design decision, resolves a design conflict, or surfaces a future implementation-blocking design gap. When in doubt, ask before editing the formal package.
+- Do not backfill implementation mechanics into the formal design package.
+- New persisted implementation-facing notes should prefer English. Existing Chinese design documents may remain Chinese when preserving established design terminology.
 - The game must support at least Simplified Chinese and English. Formal design documents should remain primarily Chinese. For xiuxian-specific worldbuilding terms that do not yet have a good English localization, use a simple temporary translation first and keep the Chinese source meaning recoverable for later localization review.
 - For package structure, templates, terminology, package-internal references, leading-section style, stale-content handling, and historical-material handling, follow `docs/xiuxian_design_docs/00_INDEX/文档模板与包内引用规范.md`.
 - Keep `docs/xiuxian_design_docs` self-contained. Package-external materials are references only; adopted details must be restated in the formal package or directly authorized by the user.
